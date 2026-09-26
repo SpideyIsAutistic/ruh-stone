@@ -16,16 +16,16 @@ export default function ArchitecturalDivider({
       className={`relative flex items-center justify-center py-12 md:py-16 overflow-hidden ${className}`}
       aria-hidden="true"
     >
-      {/* Left fine etched line with gradient fade */}
-      <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-[#443c34] to-[#bba172]/40" />
+      {/* Left fine carved line with gradient fade */}
+      <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-[#D8C5A5] to-[#B98B62]/60" />
 
-      {/* Central Ornamental Emblem */}
-      <div className="mx-6 flex items-center space-x-3 text-[#bba172]">
+      {/* Central Architectural Ornamental Emblem */}
+      <div className="mx-6 flex items-center space-x-3 text-[#9B5540]">
         {variant === 'rosette' && (
           <div className="flex items-center space-x-2">
-            <span className="h-1 w-1 rounded-full bg-[#bba172]/60" />
+            <span className="h-1 w-1 rounded-full bg-[#B98B62]" />
             <svg
-              className="w-5 h-5 text-[#d4b584]/80 transform rotate-45"
+              className="w-5 h-5 text-[#9B5540] transform rotate-45"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -34,13 +34,13 @@ export default function ArchitecturalDivider({
               <rect x="5" y="5" width="14" height="14" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            <span className="h-1 w-1 rounded-full bg-[#bba172]/60" />
+            <span className="h-1 w-1 rounded-full bg-[#B98B62]" />
           </div>
         )}
 
         {variant === 'arch' && (
           <svg
-            className="w-8 h-5 text-[#d4b584]/80"
+            className="w-8 h-5 text-[#6E3027]"
             viewBox="0 0 40 20"
             fill="none"
             stroke="currentColor"
@@ -52,25 +52,25 @@ export default function ArchitecturalDivider({
         )}
 
         {variant === 'jaali' && (
-          <div className="flex space-x-1.5 opacity-70">
+          <div className="flex space-x-2 opacity-80">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="w-2 h-2 rotate-45 border border-[#bba172]/70 bg-[#1c1a18]"
+                className="w-2.5 h-2.5 rotate-45 border border-[#9B5540] bg-[#F2EBDD]"
               />
             ))}
           </div>
         )}
 
         {label && (
-          <span className="text-[10px] uppercase font-sans tracking-[0.3em] text-[#c2a37f]/90 px-2 font-medium">
+          <span className="text-[10px] uppercase font-sans tracking-[0.3em] text-[#6E3027] px-2 font-medium">
             {label}
           </span>
         )}
       </div>
 
-      {/* Right fine etched line with gradient fade */}
-      <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-[#443c34] to-[#bba172]/40" />
+      {/* Right fine carved line with gradient fade */}
+      <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-[#D8C5A5] to-[#B98B62]/60" />
     </div>
   );
 }

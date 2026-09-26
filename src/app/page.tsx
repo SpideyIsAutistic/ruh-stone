@@ -63,9 +63,9 @@ export default function Home() {
 
   return (
     <SmoothScroll>
-      <div className="relative min-h-screen bg-[#080706] text-[#f4ecdf] overflow-x-hidden selection:bg-[#bd976e]/30 selection:text-[#faf6f0]">
-        {/* Ambient Film Grain Overlay */}
-        <div className="grain-overlay fixed inset-0 pointer-events-none z-30 opacity-70" />
+      <div className="relative min-h-screen bg-[#F2EBDD] text-[#241A14] overflow-x-hidden selection:bg-[#B98B62]/30 selection:text-[#241A14] plaster-texture">
+        {/* Ambient Plaster Grain Overlay */}
+        <div className="grain-overlay fixed inset-0 pointer-events-none z-30 opacity-30" />
 
         {/* Ambient Floating Stone Dust Particles */}
         <DustParticles />
