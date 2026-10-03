@@ -9,6 +9,7 @@ import { CRAFT_PRODUCTS } from '@/data/craftData';
 
 interface ProductDetailModalProps {
   product: CraftProduct | null;
+  allProducts?: CraftProduct[];
   onClose: () => void;
   onAddToCart: (product: CraftProduct, quantity: number) => void;
   onOpenEnquiry: (product: CraftProduct) => void;
@@ -17,11 +18,13 @@ interface ProductDetailModalProps {
 
 export default function ProductDetailModal({
   product,
+  allProducts,
   onClose,
   onAddToCart,
   onOpenEnquiry,
   onSelectRelated,
 }: ProductDetailModalProps) {
+  const modalContainerRef = React.useRef<HTMLDivElement>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedSuccess, setAddedSuccess] = useState(false);
@@ -67,9 +70,25 @@ export default function ProductDetailModal({
     setTimeout(() => setAddedSuccess(false), 2200);
   };
 
-  const relatedProducts = CRAFT_PRODUCTS.filter(
-    (p) => p.id !== product.id && (p.category === product.category || Math.random() > 0.4)
-  ).slice(0, 3);
+  const handleSelectProduct = (newProduct: CraftProduct) => {
+    onSelectRelated(newProduct);
+    if (modalContainerRef.current) {
+      modalContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const activeCatalog = allProducts && allProducts.length > 0 ? allProducts : CRAFT_PRODUCTS;
+
+  // Recommended products: products in same category first, followed by others, excluding current product
+  const recommendedProducts = React.useMemo(() => {
+    if (!product) return [];
+    const others = activeCatalog.filter((p) => p.id !== product.id);
+    const sameCategory = others.filter((p) => p.category === product.category);
+    const differentCategory = others.filter((p) => p.category !== product.category);
+    return [...sameCategory, ...differentCategory].slice(0, 4);
+  }, [product, activeCatalog]);
+
+  const topPairing = recommendedProducts[0] || null;
 
   const galleryList = product.galleryImages && product.galleryImages.length > 0
     ? product.galleryImages
@@ -78,7 +97,10 @@ export default function ProductDetailModal({
   const currentGalleryImage = galleryList[activeImageIndex] || galleryList[0];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#FAF7F2] animate-in fade-in duration-300">
+    <div
+      ref={modalContainerRef}
+      className="fixed inset-0 z-50 overflow-y-auto bg-[#FAF7F2] animate-in fade-in duration-300"
+    >
       {/* Top Header Bar */}
       <header className="sticky top-0 z-20 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8E0D2] px-6 md:px-12 py-5 flex items-center justify-between">
         <div className="flex items-center space-x-2 text-[10px] md:text-[11px] font-sans tracking-[0.24em] uppercase text-[#7A746C]">
@@ -376,6 +398,48 @@ export default function ProductDetailModal({
                 </span>
               </button>
             </div>
+
+            {/* Recommended Pairing Card (Curated Companion Object) */}
+            {topPairing && (
+              <div className="pt-6 border-t border-[#E8E0D2]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#7A746C] font-semibold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#AA9B87]" />
+                    RECOMMENDED PAIRING
+                  </span>
+                  <button
+                    onClick={() => handleSelectProduct(topPairing)}
+                    className="text-[10px] uppercase tracking-wider text-[#23201D] hover:text-[#AA9B87] underline underline-offset-4"
+                  >
+                    View Piece →
+                  </button>
+                </div>
+
+                <div
+                  onClick={() => handleSelectProduct(topPairing)}
+                  className="group flex items-center gap-4 p-3 bg-[#F4EFE6] border border-[#E8E0D2] hover:border-[#23201D]/40 transition-colors cursor-pointer"
+                >
+                  <div className="relative w-16 h-16 shrink-0 overflow-hidden bg-[#ECE4D6]">
+                    <ProductCardImage
+                      product={topPairing}
+                      aspectRatio="aspect-square"
+                      sizes="64px"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-serif text-sm text-[#23201D] truncate group-hover:text-[#AA9B87] transition-colors">
+                      {topPairing.name}
+                    </h4>
+                    <p className="text-[11px] text-[#7A746C] truncate mt-0.5">
+                      {topPairing.category} · {topPairing.material}
+                    </p>
+                    <span className="text-xs font-medium text-[#23201D] mt-1 block">
+                      {topPairing.isOnSale && topPairing.salePrice ? topPairing.salePrice : topPairing.price}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -445,50 +509,72 @@ export default function ProductDetailModal({
           </div>
         </div>
 
-        {/* SECTION: Related Handcrafted Objects */}
-        <div className="mt-24 pt-16 border-t border-[#E8E0D2]">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block">
-                CURATED COMPANIONS
-              </span>
-              <h2 className="font-serif text-2xl md:text-3xl text-[#23201D] font-light mt-1">
-                Related Handcrafted Objects
-              </h2>
+        {/* SECTION: Recommended Handcrafted Objects */}
+        {recommendedProducts.length > 0 && (
+          <div className="mt-24 pt-16 border-t border-[#E8E0D2]">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-3">
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block">
+                  RECOMMENDED FOR YOU
+                </span>
+                <h2 className="font-serif text-2xl md:text-3xl text-[#23201D] font-light mt-1">
+                  Recommended Handcrafted Objects
+                </h2>
+              </div>
+              <p className="text-xs text-[#7A746C] font-light max-w-sm">
+                Complementary pieces shaped with matching noble materials, ancestral discipline, and domestic stillness.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+              {recommendedProducts.map((item) => {
+                const itemInStock = isProductInStock(item);
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleSelectProduct(item)}
+                    className="group cursor-pointer flex flex-col bg-[#FAF7F2]"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSelectProduct(item);
+                    }}
+                  >
+                    <div className="relative mb-3">
+                      <ProductCardImage
+                        product={item}
+                        aspectRatio="aspect-[4/5]"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      />
+                      {!itemInStock && (
+                        <div className="absolute top-2 left-2 bg-[#23201D]/90 text-[#FAF7F2] text-[8px] uppercase tracking-widest px-2 py-0.5 font-medium">
+                          Sold Out
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[9px] uppercase tracking-[0.25em] text-[#7A746C] font-medium block">
+                      {item.category} · {item.origin}
+                    </span>
+                    <h4 className="font-serif text-base text-[#23201D] group-hover:text-[#AA9B87] transition-colors mt-0.5 line-clamp-1">
+                      {item.name}
+                    </h4>
+                    <p className="text-[11px] text-[#7A746C] truncate mt-0.5">
+                      {item.material}
+                    </p>
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#E8E0D2]/70">
+                      <span className="text-xs text-[#23201D] font-medium">
+                        {item.isOnSale && item.salePrice ? item.salePrice : item.price}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-widest text-[#7A746C] group-hover:text-[#23201D] transition-colors font-medium">
+                        VIEW OBJECT →
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            {relatedProducts.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => onSelectRelated(item)}
-                className="group cursor-pointer flex flex-col"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onSelectRelated(item);
-                }}
-              >
-                <ProductCardImage
-                  product={item}
-                  aspectRatio="aspect-[4/3]"
-                  sizes="(max-width: 640px) 100vw, 33vw"
-                  className="mb-3"
-                />
-                <h4 className="font-serif text-base text-[#23201D] group-hover:text-[#AA9B87] transition-colors">
-                  {item.name}
-                </h4>
-                <span className="text-[11px] text-[#7A746C] mt-0.5">
-                  {item.material} · {item.origin}
-                </span>
-                <span className="text-xs text-[#23201D] font-medium mt-1">
-                  {item.price}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

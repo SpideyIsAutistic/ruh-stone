@@ -158,6 +158,7 @@ export default function Home() {
       {/* PRODUCT DETAIL EXPERIENCE: Modal with large photo gallery, specs, "The Making" visual story & related objects */}
       <ProductDetailModal
         product={selectedProduct}
+        allProducts={products}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
         onOpenEnquiry={handleOpenEnquiry}
