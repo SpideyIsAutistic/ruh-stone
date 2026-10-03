@@ -12,6 +12,7 @@ import LifestyleSection from '@/components/LifestyleSection';
 import NewsletterBanner from '@/components/NewsletterBanner';
 import Footer from '@/components/Footer';
 import ProductDetailModal from '@/components/ProductDetailModal';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import CartDrawer from '@/components/CartDrawer';
 import ContactModal from '@/components/ContactModal';
 import { CraftProduct, CartItem, CraftCategory, isProductInStock } from '@/types';
@@ -156,14 +157,16 @@ export default function Home() {
       />
 
       {/* PRODUCT DETAIL EXPERIENCE: Modal with large photo gallery, specs, "The Making" visual story & related objects */}
-      <ProductDetailModal
-        product={selectedProduct}
-        allProducts={products}
-        onClose={() => setSelectedProduct(null)}
-        onAddToCart={handleAddToCart}
-        onOpenEnquiry={handleOpenEnquiry}
-        onSelectRelated={(product) => setSelectedProduct(product)}
-      />
+      <ErrorBoundary onReset={() => setSelectedProduct(null)}>
+        <ProductDetailModal
+          product={selectedProduct}
+          allProducts={products}
+          onClose={() => setSelectedProduct(null)}
+          onAddToCart={handleAddToCart}
+          onOpenEnquiry={handleOpenEnquiry}
+          onSelectRelated={(product) => setSelectedProduct(product)}
+        />
+      </ErrorBoundary>
 
       {/* Interactive Cart Drawer */}
       <CartDrawer

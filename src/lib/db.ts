@@ -203,7 +203,16 @@ export async function initDatabase(): Promise<void> {
       dbInitialized = true;
       return;
     } catch (pgError: any) {
-      console.error('[DB] PostgreSQL initialization error:', pgError);
+      console.warn('[DB] PostgreSQL initialization warning:', pgError?.message || pgError);
+      if (
+        pgError?.code === 'ENOTFOUND' ||
+        pgError?.code === 'ETIMEDOUT' ||
+        pgError?.code === 'ECONNREFUSED' ||
+        process.env.NEXT_PHASE === 'phase-production-build'
+      ) {
+        console.warn('[DB] PostgreSQL unreachable; continuing with local static/cached data.');
+        return;
+      }
       throw new Error(`PostgreSQL Database Error: ${pgError?.message || pgError}`);
     }
   }
@@ -336,26 +345,30 @@ function syncBackupJson(products: CraftProduct[]) {
  * Fetch all products from persistent database.
  */
 export async function dbGetProducts(options?: { includeDrafts?: boolean }): Promise<CraftProduct[]> {
-  await initDatabase();
-  const includeDrafts = options?.includeDrafts ?? false;
+  try {
+    await initDatabase();
+    const includeDrafts = options?.includeDrafts ?? false;
 
-  const { isPostgres } = getDatabaseConfig();
-  const pool = getPgPool();
+    const { isPostgres } = getDatabaseConfig();
+    const pool = getPgPool();
 
-  if (isPostgres && pool) {
-    const query = includeDrafts
-      ? 'SELECT data FROM products ORDER BY created_at DESC'
-      : 'SELECT data FROM products WHERE is_published = TRUE ORDER BY created_at DESC';
-    const res = await pool.query(query);
-    return res.rows.map((r) => (typeof r.data === 'string' ? JSON.parse(r.data) : r.data));
-  }
+    if (isPostgres && pool) {
+      const query = includeDrafts
+        ? 'SELECT data FROM products ORDER BY created_at DESC'
+        : 'SELECT data FROM products WHERE is_published = TRUE ORDER BY created_at DESC';
+      const res = await pool.query(query);
+      return res.rows.map((r) => (typeof r.data === 'string' ? JSON.parse(r.data) : r.data));
+    }
 
-  if (sqliteDb) {
-    const query = includeDrafts
-      ? 'SELECT data FROM products ORDER BY created_at DESC'
-      : 'SELECT data FROM products WHERE is_published = 1 ORDER BY created_at DESC';
-    const rows = sqliteDb.prepare(query).all() as Array<{ data: string }>;
-    return rows.map((r) => JSON.parse(r.data));
+    if (sqliteDb) {
+      const query = includeDrafts
+        ? 'SELECT data FROM products ORDER BY created_at DESC'
+        : 'SELECT data FROM products WHERE is_published = 1 ORDER BY created_at DESC';
+      const rows = sqliteDb.prepare(query).all() as Array<{ data: string }>;
+      return rows.map((r) => JSON.parse(r.data));
+    }
+  } catch (err: any) {
+    console.warn('[DB] dbGetProducts error, returning static seed fallback:', err?.message || err);
   }
 
   return getInitialSeedProducts();
@@ -365,26 +378,32 @@ export async function dbGetProducts(options?: { includeDrafts?: boolean }): Prom
  * Fetch a single product by slug from persistent database.
  */
 export async function dbGetProductBySlug(slug: string): Promise<CraftProduct | null> {
-  await initDatabase();
-  const { isPostgres } = getDatabaseConfig();
-  const pool = getPgPool();
+  try {
+    await initDatabase();
+    const { isPostgres } = getDatabaseConfig();
+    const pool = getPgPool();
 
-  if (isPostgres && pool) {
-    const res = await pool.query(
-      'SELECT data FROM products WHERE slug = $1 OR id = $1 LIMIT 1',
-      [slug]
-    );
-    if (res.rows.length === 0) return null;
-    const r = res.rows[0];
-    return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
-  }
+    if (isPostgres && pool) {
+      const res = await pool.query(
+        'SELECT data FROM products WHERE slug = $1 OR id = $1 LIMIT 1',
+        [slug]
+      );
+      if (res.rows.length > 0) {
+        const r = res.rows[0];
+        return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+      }
+      return null;
+    }
 
-  if (sqliteDb) {
-    const row = sqliteDb
-      .prepare('SELECT data FROM products WHERE slug = ? OR id = ? LIMIT 1')
-      .get(slug, slug) as { data: string } | undefined;
-    if (!row) return null;
-    return JSON.parse(row.data);
+    if (sqliteDb) {
+      const row = sqliteDb
+        .prepare('SELECT data FROM products WHERE slug = ? OR id = ? LIMIT 1')
+        .get(slug, slug) as { data: string } | undefined;
+      if (row) return JSON.parse(row.data);
+      return null;
+    }
+  } catch (err: any) {
+    console.warn('[DB] dbGetProductBySlug error, searching static fallback:', err?.message || err);
   }
 
   const all = await dbGetProducts({ includeDrafts: true });

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import SafeImage from './SafeImage';
 import Link from 'next/link';
 import ProductCardImage from './ProductCardImage';
 import { X, Check, ShoppingBag, MessageSquare, Sparkles } from 'lucide-react';
@@ -48,11 +48,12 @@ export default function ProductDetailModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
       if (!product) return;
-      if (e.key === 'ArrowRight') {
-        setActiveImageIndex((prev) => (prev + 1) % product.galleryImages.length);
+      const count = product.galleryImages?.length || (product.images?.length || 1);
+      if (e.key === 'ArrowRight' && count > 1) {
+        setActiveImageIndex((prev) => (prev + 1) % count);
       }
-      if (e.key === 'ArrowLeft') {
-        setActiveImageIndex((prev) => (prev - 1 + product.galleryImages.length) % product.galleryImages.length);
+      if (e.key === 'ArrowLeft' && count > 1) {
+        setActiveImageIndex((prev) => (prev - 1 + count) % count);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -91,11 +92,23 @@ export default function ProductDetailModal({
 
   const topPairing = recommendedProducts[0] || null;
 
-  const galleryList = product.galleryImages && product.galleryImages.length > 0
+  const fallbackCover = product.heroImage || (product.images && product.images[0]) || '/images/atelier-carving.jpg';
+  const galleryList = (product.galleryImages && product.galleryImages.length > 0)
     ? product.galleryImages
-    : [{ url: product.heroImage, label: 'Primary View', caption: product.shortDescription }];
+    : (product.images && product.images.length > 0)
+    ? product.images.map((url, i) => ({
+        url,
+        label: i === 0 ? 'Primary Angle' : `Detail Angle ${i + 1}`,
+        caption: product.shortDescription || `${product.name} detail view.`,
+      }))
+    : [{ url: fallbackCover, label: 'Primary View', caption: product.shortDescription || product.name }];
 
-  const currentGalleryImage = galleryList[activeImageIndex] || galleryList[0];
+  const safeIndex = Math.min(Math.max(0, activeImageIndex), galleryList.length - 1);
+  const currentGalleryImage = galleryList[safeIndex] || galleryList[0] || {
+    url: fallbackCover,
+    label: product.name,
+    caption: product.shortDescription || '',
+  };
 
   return (
     <div
@@ -130,9 +143,9 @@ export default function ProductDetailModal({
           <div className="lg:col-span-6 flex flex-col space-y-4">
             {/* Primary Large Image - 4:5 Portrait Ratio to prevent cropping the product */}
             <div className="group relative aspect-[4/5] w-full max-h-[640px] overflow-hidden bg-[#ECE4D6]">
-              <Image
+              <SafeImage
                 src={currentGalleryImage.url}
-                alt={currentGalleryImage.label}
+                alt={currentGalleryImage.label || product.name}
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -151,7 +164,7 @@ export default function ProductDetailModal({
               {/* Angle Counter Badge */}
               {galleryList.length > 1 && (
                 <div className="absolute top-4 right-4 z-10 bg-[#23201D]/75 backdrop-blur-sm text-[#FAF7F2] text-[10px] uppercase tracking-[0.2em] px-2.5 py-1">
-                  Angle {activeImageIndex + 1} of {galleryList.length}
+                  Angle {safeIndex + 1} of {galleryList.length}
                 </div>
               )}
 
@@ -184,10 +197,10 @@ export default function ProductDetailModal({
               {/* Caption Overlay */}
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5 text-[#FAF7F2]">
                 <p className="text-[10px] tracking-[0.2em] uppercase font-medium opacity-80">
-                  {currentGalleryImage.label}
+                  {currentGalleryImage.label || product.name}
                 </p>
                 <p className="text-xs md:text-sm font-light mt-0.5 max-w-lg">
-                  {currentGalleryImage.caption}
+                  {currentGalleryImage.caption || product.shortDescription || ''}
                 </p>
               </div>
             </div>
@@ -195,29 +208,32 @@ export default function ProductDetailModal({
             {/* Thumbnail Selectors (Visible when multiple photos exist) */}
             {galleryList.length > 1 && (
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5">
-                {galleryList.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImageIndex(idx)}
-                    className={`relative aspect-[4/5] overflow-hidden bg-[#ECE4D6] border-2 transition-all focus:outline-none focus:ring-0 focus-visible:outline-none ${
-                      activeImageIndex === idx
-                        ? 'border-[#23201D] opacity-100 shadow-xs'
-                        : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
-                    aria-label={`View angle ${idx + 1}`}
-                  >
-                    <Image
-                      src={img.url}
-                      alt={img.label}
-                      fill
-                      sizes="15vw"
-                      className="object-cover object-center"
-                    />
-                    <span className="absolute bottom-0.5 right-1 text-[8px] font-mono text-[#FAF7F2] bg-black/60 px-1 py-0.2">
-                      {idx + 1}
-                    </span>
-                  </button>
-                ))}
+                {galleryList.map((img, idx) => {
+                  if (!img || !img.url) return null;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`relative aspect-[4/5] overflow-hidden bg-[#ECE4D6] border-2 transition-all focus:outline-none focus:ring-0 focus-visible:outline-none ${
+                        safeIndex === idx
+                          ? 'border-[#23201D] opacity-100 shadow-xs'
+                          : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                      aria-label={`View angle ${idx + 1}`}
+                    >
+                      <SafeImage
+                        src={img.url}
+                        alt={img.label || `${product.name} angle ${idx + 1}`}
+                        fill
+                        sizes="15vw"
+                        className="object-cover object-center"
+                      />
+                      <span className="absolute bottom-0.5 right-1 text-[8px] font-mono text-[#FAF7F2] bg-black/60 px-1 py-0.2">
+                        {idx + 1}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -452,70 +468,82 @@ export default function ProductDetailModal({
         </div>
 
         {/* SECTION: THE MAKING (Visual Storytelling Section as Requested) */}
-        <div className="mt-24 pt-16 border-t border-[#E8E0D2]">
-          <div className="max-w-2xl mb-12">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block mb-2">
-              PROCESS & PROVENANCE
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#23201D] font-light">
-              The Making
-            </h2>
-            <p className="text-xs md:text-sm text-[#7A746C] mt-2 font-light">
-              Shaped through patience, ancestral heritage, and unhurried human touch.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left: Making Story Details */}
-            <div className="lg:col-span-6 space-y-6">
-              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
-                  MATERIAL SOURCING
-                </span>
-                <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
-                  {product.theMaking.materialSourcing}
-                </p>
-              </div>
-
-              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
-                  HAND TECHNIQUE
-                </span>
-                <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
-                  {product.theMaking.handTechnique}
-                </p>
-              </div>
-
-              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
-                  CARE & PATINA
-                </span>
-                <ul className="text-xs text-[#7A746C] space-y-1 list-disc list-inside">
-                  {product.theMaking.careInstructions.map((c, i) => (
-                    <li key={i}>{c}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <p className="font-serif italic text-base text-[#3A3027] pl-2 border-l-2 border-[#D1C2AC]">
-                {product.theMaking.artisanNote}
+        {product.theMaking && (
+          <div className="mt-24 pt-16 border-t border-[#E8E0D2]">
+            <div className="max-w-2xl mb-12">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block mb-2">
+                PROCESS & PROVENANCE
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl text-[#23201D] font-light">
+                The Making
+              </h2>
+              <p className="text-xs md:text-sm text-[#7A746C] mt-2 font-light">
+                Shaped through patience, ancestral heritage, and unhurried human touch.
               </p>
             </div>
 
-            {/* Right: Making Image */}
-            <div className="lg:col-span-6">
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ECE4D6]">
-                <Image
-                  src={product.theMaking.makingImage}
-                  alt={`Artisan crafting ${product.name}`}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover object-center"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              {/* Left: Making Story Details */}
+              <div className="lg:col-span-6 space-y-6">
+                {product.theMaking.materialSourcing && (
+                  <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                      MATERIAL SOURCING
+                    </span>
+                    <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
+                      {product.theMaking.materialSourcing}
+                    </p>
+                  </div>
+                )}
+
+                {product.theMaking.handTechnique && (
+                  <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                      HAND TECHNIQUE
+                    </span>
+                    <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
+                      {product.theMaking.handTechnique}
+                    </p>
+                  </div>
+                )}
+
+                {Array.isArray(product.theMaking.careInstructions) && product.theMaking.careInstructions.length > 0 && (
+                  <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                      CARE & PATINA
+                    </span>
+                    <ul className="text-xs text-[#7A746C] space-y-1 list-disc list-inside">
+                      {product.theMaking.careInstructions.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {product.theMaking.artisanNote && (
+                  <p className="font-serif italic text-base text-[#3A3027] pl-2 border-l-2 border-[#D1C2AC]">
+                    {product.theMaking.artisanNote}
+                  </p>
+                )}
               </div>
+
+              {/* Right: Making Image */}
+              {product.theMaking.makingImage && (
+                <div className="lg:col-span-6">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ECE4D6]">
+                    <SafeImage
+                      src={product.theMaking.makingImage}
+                      alt={`Artisan crafting ${product.name}`}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      className="object-cover object-center"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* SECTION: Recommended Handcrafted Objects */}
         {recommendedProducts.length > 0 && (

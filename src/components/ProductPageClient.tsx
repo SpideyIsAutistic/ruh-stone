@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import SafeImage from '@/components/SafeImage';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -104,7 +104,7 @@ export default function ProductPageClient({
           {/* Left Column: Image Gallery */}
           <div className="lg:col-span-6 flex flex-col space-y-4">
             <div className="relative aspect-[4/5] sm:aspect-square lg:aspect-[4/5] w-full overflow-hidden bg-[#ECE4D6]">
-              <Image
+              <SafeImage
                 src={currentGalleryImage.url}
                 alt={currentGalleryImage.caption || product.name}
                 fill
@@ -134,7 +134,7 @@ export default function ProductPageClient({
                     }`}
                     aria-label={`View angle ${idx + 1}`}
                   >
-                    <Image
+                    <SafeImage
                       src={img.url}
                       alt={img.label || `${product.name} detail`}
                       fill
@@ -376,68 +376,80 @@ export default function ProductPageClient({
         </div>
 
         {/* Process & Provenance Story */}
-        <section className="mt-24 pt-16 border-t border-[#E8E0D2]">
-          <div className="max-w-2xl mb-12">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block mb-2">
-              PROCESS & PROVENANCE
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#23201D] font-light">
-              The Making of {product.name}
-            </h2>
-            <p className="text-xs md:text-sm text-[#7A746C] mt-2 font-light">
-              Shaped through generational patience, ancestral Indian heritage, and unhurried human touch.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div className="lg:col-span-6 space-y-6">
-              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
-                  MATERIAL SOURCING
-                </span>
-                <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
-                  {product.theMaking.materialSourcing}
-                </p>
-              </div>
-
-              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
-                  HAND TECHNIQUE
-                </span>
-                <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
-                  {product.theMaking.handTechnique}
-                </p>
-              </div>
-
-              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
-                  CARE & PATINA
-                </span>
-                <ul className="text-xs text-[#7A746C] space-y-1 list-disc list-inside">
-                  {product.theMaking.careInstructions.map((c, i) => (
-                    <li key={i}>{c}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <p className="font-serif italic text-base text-[#3A3027] pl-3 border-l-2 border-[#D1C2AC]">
-                {product.theMaking.artisanNote}
+        {product.theMaking && (
+          <section className="mt-24 pt-16 border-t border-[#E8E0D2]">
+            <div className="max-w-2xl mb-12">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block mb-2">
+                PROCESS & PROVENANCE
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl text-[#23201D] font-light">
+                The Making of {product.name}
+              </h2>
+              <p className="text-xs md:text-sm text-[#7A746C] mt-2 font-light">
+                Shaped through generational patience, ancestral Indian heritage, and unhurried human touch.
               </p>
             </div>
 
-            <div className="lg:col-span-6">
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ECE4D6]">
-                <Image
-                  src={product.theMaking.makingImage}
-                  alt={`Artisan crafting ${product.name}`}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover object-center"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              <div className="lg:col-span-6 space-y-6">
+                {product.theMaking.materialSourcing && (
+                  <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                      MATERIAL SOURCING
+                    </span>
+                    <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
+                      {product.theMaking.materialSourcing}
+                    </p>
+                  </div>
+                )}
+
+                {product.theMaking.handTechnique && (
+                  <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                      HAND TECHNIQUE
+                    </span>
+                    <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
+                      {product.theMaking.handTechnique}
+                    </p>
+                  </div>
+                )}
+
+                {Array.isArray(product.theMaking.careInstructions) && product.theMaking.careInstructions.length > 0 && (
+                  <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                      CARE & PATINA
+                    </span>
+                    <ul className="text-xs text-[#7A746C] space-y-1 list-disc list-inside">
+                      {product.theMaking.careInstructions.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {product.theMaking.artisanNote && (
+                  <p className="font-serif italic text-base text-[#3A3027] pl-3 border-l-2 border-[#D1C2AC]">
+                    {product.theMaking.artisanNote}
+                  </p>
+                )}
               </div>
+
+              {product.theMaking.makingImage && (
+                <div className="lg:col-span-6">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ECE4D6]">
+                    <SafeImage
+                      src={product.theMaking.makingImage}
+                      alt={`Artisan crafting ${product.name}`}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      className="object-cover object-center"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Recommended Products Grid */}
         {recommendedProducts.length > 0 && (

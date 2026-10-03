@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import SafeImage from './SafeImage';
 import Link from 'next/link';
 import { X, Trash2, Check, ArrowRight, ShoppingBag, ShieldCheck, Loader2 } from 'lucide-react';
 import { CartItem, getEffectivePrice } from '@/types';
@@ -340,7 +340,7 @@ export default function CartDrawer({
                     className="flex space-x-4 pb-6 border-b border-[#E8E0D2]"
                   >
                     <div className="relative w-20 h-24 overflow-hidden bg-[#ECE4D6] shrink-0">
-                      <Image
+                      <SafeImage
                         src={item.product.heroImage}
                         alt={item.product.name}
                         fill

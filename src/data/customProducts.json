@@ -1,5 +1,60 @@
 [
   {
+    "id": "pooja-thaali-set-1791047952244",
+    "sku": "RUH-pooja-thaali-set-1791047952244",
+    "name": "Pooja Thaali Set",
+    "slug": "pooja-thaali-set",
+    "price": "₹2,162",
+    "images": [
+      "/uploads/1791021487383-ohrjf-EC298C60-D897-415B-BACF-5ED6EA7F3BEA.png",
+      "/uploads/1791021487385-gwhoq-C5BEE66F-21C6-4E2B-A345-EB404F255BF8.png",
+      "/uploads/1791021487387-ofqzq-2EEA444C-318E-4623-9073-7EA20005C559.png"
+    ],
+    "origin": "Jaipur, Rajasthan",
+    "status": "published",
+    "category": "German Silver",
+    "imageFit": "contain",
+    "isOnSale": false,
+    "material": "Natural Handcrafted Earth & Mineral",
+    "heroImage": "/uploads/1791021487383-ohrjf-EC298C60-D897-415B-BACF-5ED6EA7F3BEA.png",
+    "theMaking": {
+      "artisanNote": "“Every piece carries the rhythm and intention of the human hand.”",
+      "makingImage": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1600&auto=format&fit=crop",
+      "finishDetails": "Matte, organic hand-burnished touch.",
+      "handTechnique": "Shaped entirely by hand without high-speed mechanization.",
+      "careInstructions": [
+        "Dust gently with a soft microfibre cloth.",
+        "Avoid chemical cleansers or standing water."
+      ],
+      "materialSourcing": "Sustainably sourced natural materials from regional deposits."
+    },
+    "isPublished": true,
+    "isOutOfStock": false,
+    "priceNumeric": 2162,
+    "galleryImages": [
+      {
+        "url": "/uploads/1791021487383-ohrjf-EC298C60-D897-415B-BACF-5ED6EA7F3BEA.png",
+        "label": "Primary Angle",
+        "caption": "Pooja Thaali Set in warm natural daylight."
+      },
+      {
+        "url": "/uploads/1791021487385-gwhoq-C5BEE66F-21C6-4E2B-A345-EB404F255BF8.png",
+        "label": "Detail Angle 2",
+        "caption": "Pooja Thaali Set - Handcrafted detail view 2."
+      },
+      {
+        "url": "/uploads/1791021487387-ofqzq-2EEA444C-318E-4623-9073-7EA20005C559.png",
+        "label": "Detail Angle 3",
+        "caption": "Pooja Thaali Set - Handcrafted detail view 3."
+      }
+    ],
+    "stockQuantity": 10,
+    "craftTechnique": "Ancestral Hand-Tooling",
+    "editorialQuote": "Shaped through patience, tradition, and living materials.",
+    "longDescription": "Pooja Thaali Set is meticulously handcrafted using traditional techniques, celebrating organic textures and tactile stillness.",
+    "shortDescription": "A beautifully crafted traditional set featuring Laxmi and Ganesh motifs, perfect for pooja rituals, festive décor, and auspicious gifting. Its elegant German silver finish adds a timeless touch of tradition and sophistication."
+  },
+  {
     "id": "gold-toned-set-of-4-dry-fruit-tray-1791018166727",
     "name": "Gold Toned Set of 4 Dry Fruit Tray",
     "slug": "gold-toned-set-of-4-dry-fruit-tray",

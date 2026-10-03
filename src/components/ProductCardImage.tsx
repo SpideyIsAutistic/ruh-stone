@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
+import SafeImage from './SafeImage';
 import { CraftProduct, getProductImages } from '@/types';
 
 interface ProductCardImageProps {
@@ -22,7 +22,8 @@ export default function ProductCardImage({
   children,
 }: ProductCardImageProps) {
   const images = getProductImages(product);
-  const primaryImage = images[0] || product.heroImage;
+  const fallbackCover = '/images/atelier-carving.jpg';
+  const primaryImage = images[0] || product.heroImage || fallbackCover;
   const hoverImage = images.length > 1 && images[1] && images[1] !== primaryImage ? images[1] : null;
 
   // Always default to object-cover so product photography fills the frame edge-to-edge seamlessly without borders
@@ -34,7 +35,7 @@ export default function ProductCardImage({
       className={`relative ${aspectRatio} w-full overflow-hidden bg-[#ECE4D6] ${className}`}
     >
       {/* 1. Primary Default Image (Image 1) */}
-      <Image
+      <SafeImage
         src={primaryImage}
         alt={product.name}
         fill
@@ -44,7 +45,7 @@ export default function ProductCardImage({
 
       {/* 2. Hover Image (Image 2 of the SAME product) with subtle 350-400ms crossfade */}
       {hoverImage && (
-        <Image
+        <SafeImage
           src={hoverImage}
           alt={`${product.name} alternate angle`}
           fill

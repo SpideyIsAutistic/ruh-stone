@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import SafeImage from '@/components/SafeImage';
 import { notFound } from 'next/navigation';
 import { getOrderById } from '@/lib/orders';
 import { getShiprocketTracking } from '@/lib/shiprocket';
@@ -224,7 +224,7 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
               {order.items.map((item) => (
                 <div key={item.productId} className="py-4 flex space-x-4 items-center">
                   <div className="relative w-16 h-20 bg-[#ECE4D6] shrink-0 overflow-hidden">
-                    <Image
+                    <SafeImage
                       src={item.heroImage}
                       alt={item.name}
                       fill

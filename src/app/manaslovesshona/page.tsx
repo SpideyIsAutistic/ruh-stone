@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import SafeImage from '@/components/SafeImage';
 import {
   Upload,
   Plus,
@@ -162,7 +162,45 @@ export default function AdminPage() {
     localStorage.removeItem('ruh_admin_auth');
   };
 
-  // Multi-Image Upload Handler with High-Resolution Clean Upload (No Letterbox Borders)
+  // Compress image on client canvas to sharp, high-res web-optimized JPEG (< 250KB)
+  const compressImageToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const maxDim = 1600;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Multi-Image Upload Handler with High-Resolution Clean Upload
   const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -171,38 +209,57 @@ export default function AdminPage() {
     setUploadingImage(true);
 
     try {
-      // 1. Instant local previews of the original uploaded images
-      const localUrls = rawFileList.map((f) => URL.createObjectURL(f));
+      // 1. Compress each file directly to clean, persistent base64 data URLs
+      const compressedDataUrls: string[] = [];
+      for (const file of rawFileList) {
+        const compressed = await compressImageToDataUrl(file);
+        if (compressed) compressedDataUrls.push(compressed);
+      }
+
+      if (compressedDataUrls.length === 0) return;
+
       const previousCount = imagePreviews.length;
-      setImagePreviews((prev) => [...prev, ...localUrls]);
+      // Set compressed data URLs immediately (Safe for both preview and persistence)
+      setImagePreviews((prev) => [...prev, ...compressedDataUrls]);
 
-      // 2. Upload original files directly to /api/upload without canvas borders
-      const body = new FormData();
-      rawFileList.forEach((file) => body.append('files', file));
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body,
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const uploadedUrls: string[] = data.urls || (data.url ? [data.url] : []);
-        if (uploadedUrls.length > 0) {
-          setImagePreviews((prev) => {
-            const copy = [...prev];
-            uploadedUrls.forEach((url, i) => {
-              if (previousCount + i < copy.length) {
-                copy[previousCount + i] = url;
-              } else {
-                copy.push(url);
-              }
-            });
-            return copy;
-          });
+      // 2. Attempt to upload to /api/upload for static CDN paths if supported
+      try {
+        const body = new FormData();
+        for (let i = 0; i < compressedDataUrls.length; i++) {
+          const dataUrl = compressedDataUrls[i];
+          const blob = await (await fetch(dataUrl)).blob();
+          const cleanName = rawFileList[i]?.name?.replace(/[^a-zA-Z0-9.-]/g, '_') || `photo-${i}.jpg`;
+          body.append('files', new File([blob], cleanName, { type: 'image/jpeg' }));
         }
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const uploadedUrls: string[] = data.urls || (data.url ? [data.url] : []);
+          if (uploadedUrls.length > 0) {
+            setImagePreviews((prev) => {
+              const copy = [...prev];
+              uploadedUrls.forEach((url, i) => {
+                if (previousCount + i < copy.length) {
+                  copy[previousCount + i] = url;
+                } else {
+                  copy.push(url);
+                }
+              });
+              return copy;
+            });
+          }
+        }
+      } catch (uploadErr) {
+        // Upload endpoint error (e.g. serverless read-only); compressed data URLs already preserved
+        console.warn('API upload fallback to compressed data URL:', uploadErr);
       }
     } catch (err) {
-      console.error('Upload failed, falling back to local previews:', err);
+      console.error('Image compression failed:', err);
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -313,10 +370,14 @@ export default function AdminPage() {
     setActiveTab('list');
   };
 
-  // Save (Create or Update) Product
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.priceNumeric) return;
+
+    if (imagePreviews.some((url) => url.startsWith('blob:'))) {
+      setPublishError('Photos are still processing. Please wait a few seconds before saving.');
+      return;
+    }
 
     const formattedPrice = `₹${Number(formData.priceNumeric).toLocaleString('en-IN')}`;
     const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -792,7 +853,7 @@ export default function AdminPage() {
                         {/* Product Thumbnail + Name */}
                         <td className="py-4 px-6 flex items-center space-x-4">
                           <div className="relative w-12 h-16 bg-[#ECE4D6] overflow-hidden shrink-0">
-                            <Image
+                            <SafeImage
                               src={item.heroImage}
                               alt={item.name}
                               fill
@@ -1133,7 +1194,7 @@ export default function AdminPage() {
                                 : 'border-[#E8E0D2] hover:border-[#AA9B87]'
                             }`}
                           >
-                            <Image
+                            <SafeImage
                               src={url}
                               alt={`Product angle ${idx + 1}`}
                               fill
@@ -1750,7 +1811,7 @@ export default function AdminPage() {
                           selectedCoverIndex === i ? 'border-[#23201D]' : 'border-transparent opacity-60'
                         }`}
                       >
-                        <Image src={url} alt="Angle" fill className="object-cover" />
+                        <SafeImage src={url} alt="Angle" fill className="object-cover" />
                       </div>
                     ))}
                   </div>
@@ -2008,7 +2069,7 @@ export default function AdminPage() {
                               <div key={idx} className="py-2.5 flex items-center justify-between text-xs">
                                 <div className="flex items-center space-x-3">
                                   <div className="relative w-10 h-12 bg-[#ECE4D6] shrink-0 overflow-hidden">
-                                    <Image src={item.heroImage} alt={item.name} fill className="object-cover" />
+                                    <SafeImage src={item.heroImage} alt={item.name} fill className="object-cover" />
                                   </div>
                                   <div>
                                     <span className="font-serif text-sm text-[#23201D] block">{item.name}</span>
