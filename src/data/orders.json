@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "customer": {
+      "name": "Manas Pohani",
+      "email": "powergear2026@gmail.com",
+      "phone": "+919136299225",
+      "address": "2601 platino C Lodha splendora Bhayandarpada g.b road Thane West\n2601",
+      "city": "Thane West",
+      "pincode": "400615",
+      "giftNote": ""
+    },
+    "items": [
+      {
+        "productId": "gold-toned-set-of-4-dry-fruit-tray-1791018166727",
+        "name": "Gold Toned Set of 4 Dry Fruit Tray",
+        "slug": "gold-toned-set-of-4-dry-fruit-tray",
+        "heroImage": "/uploads/1791014985853-kz9hr-EC5B944F-8FF4-49E4-9F8D-00AF54E31307.png",
+        "priceNumeric": 2199,
+        "priceFormatted": "₹2,199",
+        "quantity": 1,
+        "material": "German Silver"
+      }
+    ],
+    "subtotal": 2199,
+    "shipping": 0,
+    "total": 2199,
+    "currency": "INR",
+    "paymentStatus": "pending",
+    "orderStatus": "pending",
+    "id": "RUH-2026-54257",
+    "createdAt": "2026-10-03T15:31:32.526Z",
+    "updatedAt": "2026-10-03T15:31:32.526Z"
+  }
+]
