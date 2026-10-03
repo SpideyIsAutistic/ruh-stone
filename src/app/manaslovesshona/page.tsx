@@ -669,7 +669,7 @@ export default function AdminPage() {
               <span className="text-[10px] uppercase tracking-wider text-[#7A746C] font-medium mr-2">
                 FILTER CATEGORY:
               </span>
-              {(['All', 'German Silver', 'Marble', 'Fibre'] as const).map((cat) => (
+              {(['All', 'German Silver', 'Marble', 'Fibre', 'Brass and Wood'] as const).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setAdminCategoryFilter(cat)}
@@ -1470,9 +1470,10 @@ export default function AdminPage() {
                       <option value="German Silver">German Silver</option>
                       <option value="Marble">Marble</option>
                       <option value="Fibre">Fibre</option>
+                      <option value="Brass and Wood">Brass and Wood</option>
                     </select>
                     <span className="text-[10px] text-[#7A746C] mt-1 block">
-                      Choose between German Silver, Marble, or Fibre
+                      Choose between German Silver, Marble, Fibre, or Brass and Wood
                     </span>
                   </div>
 

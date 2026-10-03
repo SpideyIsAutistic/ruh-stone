@@ -25,7 +25,7 @@ export default function ShopSection({
   const activeCategory = controlledCategory || internalCategory;
   const setActiveCategory = setControlledCategory || setInternalCategory;
 
-  const categories: CraftCategory[] = ['All', 'German Silver', 'Marble', 'Fibre'];
+  const categories: CraftCategory[] = ['All', 'German Silver', 'Marble', 'Fibre', 'Brass and Wood'];
 
   const filteredProducts =
     activeCategory === 'All'
@@ -44,7 +44,7 @@ export default function ShopSection({
             Shop
           </h2>
           <p className="text-xs md:text-sm text-[#7A746C] max-w-md mx-auto mt-4 font-light tracking-wide">
-            Handmade German silver tableware, carved Makrana marble centerpieces, and architectural fiber vessels shaped by master artisans.
+            Handmade German silver tableware, carved Makrana marble centerpieces, architectural fiber vessels, and seasoned brass and wood plinths.
           </p>
 
           {/* Minimal Category Filter Tabs */}

@@ -2,7 +2,8 @@ export type CraftCategory =
   | 'All'
   | 'German Silver'
   | 'Marble'
-  | 'Fibre';
+  | 'Fibre'
+  | 'Brass and Wood';
 
 export interface CraftProduct {
   id: string;
