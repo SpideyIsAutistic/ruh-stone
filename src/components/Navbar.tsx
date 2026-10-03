@@ -74,10 +74,10 @@ export default function Navbar({ cartCount, onOpenCart, onOpenContact }: NavbarP
             {/* Social Icons (Instagram, Pinterest as requested) */}
             <div className="flex items-center space-x-4 text-[#7A746C]">
               <a
-                href="https://instagram.com"
+                href="https://instagram.com/ruhstonee"
                 target="_blank"
                 rel="noreferrer"
-                aria-label="Instagram"
+                aria-label="Instagram @ruhstonee"
                 className="hover:text-[#23201D] transition-colors"
               >
                 <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-[1.5]" viewBox="0 0 24 24">
@@ -163,12 +163,12 @@ export default function Navbar({ cartCount, onOpenCart, onOpenContact }: NavbarP
           <div className="pt-8 border-t border-[#E8E0D2] flex flex-col space-y-4">
             <div className="flex items-center space-x-6 text-[#7A746C]">
               <a
-                href="https://instagram.com"
+                href="https://instagram.com/ruhstonee"
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs uppercase tracking-[0.2em] hover:text-[#23201D]"
               >
-                Instagram
+                Instagram (@ruhstonee)
               </a>
               <a
                 href="https://pinterest.com"
