@@ -102,8 +102,8 @@ export default function AdminPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Default master PIN for Ruh Stone atelier owner
-    if (passcode === 'ruh2026' || passcode === 'admin' || passcode === '1234') {
+    // Atelier master PIN
+    if (passcode.trim() === '9136299225') {
       setIsAuthenticated(true);
       localStorage.setItem('ruh_admin_auth', 'true');
       setPasscodeError(false);
@@ -564,12 +564,12 @@ export default function AdminPage() {
                 required
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Enter passcode (e.g. ruh2026)"
+                placeholder="Enter passcode"
                 className="w-full bg-[#FAF7F2] border border-[#D1C2AC] px-3.5 py-3 text-xs text-[#23201D] focus:border-[#23201D] focus:outline-none tracking-widest"
               />
               {passcodeError && (
                 <span className="text-[10px] text-red-700 block mt-1">
-                  Incorrect passcode. Use default: <code className="font-mono">ruh2026</code>
+                  Incorrect passcode. Please enter the valid atelier passcode.
                 </span>
               )}
             </div>
