@@ -533,7 +533,7 @@ export const COLLECTION_CATEGORIES: CollectionCategory[] = [
     name: 'BRASS AND WOOD',
     tagline: 'Hand-gouged seasoned timber, reclaimed teak joinery & cast brass accents',
     itemCount: 5,
-    image: '/images/collection-brass-wood.jpg',
+    image: '/images/collection-brass-wood-box.jpg',
     filterCategory: 'Brass and Wood',
   },
 ];
