@@ -113,7 +113,7 @@ export default function ProductDetailModal({
   return (
     <div
       ref={modalContainerRef}
-      className="fixed inset-0 z-50 overflow-y-auto bg-[#FAF7F2] animate-in fade-in duration-300"
+      className="fixed inset-0 z-[70] overflow-y-auto bg-[#FAF7F2] animate-in fade-in duration-300"
     >
       {/* Top Header Bar */}
       <header className="sticky top-0 z-20 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8E0D2] px-6 md:px-12 py-5 flex items-center justify-between">

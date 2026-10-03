@@ -105,9 +105,17 @@ export default function ShopSection({
 
                   {/* Subtle Hover Overlay with Quick Action */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300 flex items-end justify-between p-6 opacity-0 group-hover:opacity-100">
-                    <span className="bg-[#FAF7F2]/90 backdrop-blur-sm text-[#23201D] text-[10px] uppercase font-sans tracking-[0.2em] px-3.5 py-2 font-medium">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectProduct(product);
+                      }}
+                      className="bg-[#FAF7F2]/95 backdrop-blur-sm text-[#23201D] text-[10px] uppercase font-sans tracking-[0.2em] px-3.5 py-2 font-medium hover:bg-white transition-colors cursor-pointer"
+                      aria-label={`View details for ${product.name}`}
+                    >
                       {!inStock ? 'VIEW & COMMISSION' : 'VIEW DETAILS'}
-                    </span>
+                    </button>
 
                     {onQuickAddToCart && (
                       !inStock ? (

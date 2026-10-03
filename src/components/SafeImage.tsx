@@ -59,7 +59,7 @@ export default function SafeImage({
     );
   }
 
-  // Standard Next.js Image for relative paths and http(s) URLs
+  // Resilient rendering with unoptimized=true so external URLs never throw host errors
   return (
     <Image
       src={currentSrc}
@@ -69,6 +69,7 @@ export default function SafeImage({
       priority={priority}
       className={className}
       style={style}
+      unoptimized={true}
       onError={() => setHasError(true)}
       {...rest}
     />

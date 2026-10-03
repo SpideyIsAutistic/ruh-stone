@@ -157,7 +157,7 @@ export default function Home() {
       />
 
       {/* PRODUCT DETAIL EXPERIENCE: Modal with large photo gallery, specs, "The Making" visual story & related objects */}
-      <ErrorBoundary onReset={() => setSelectedProduct(null)}>
+      <ErrorBoundary key={selectedProduct?.id || 'none'} resetKey={selectedProduct?.id} onReset={() => setSelectedProduct(null)}>
         <ProductDetailModal
           product={selectedProduct}
           allProducts={products}
