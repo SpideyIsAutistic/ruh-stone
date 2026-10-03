@@ -34,9 +34,12 @@ const databaseUrl =
 
 console.log('[MIGRATION] Connecting to PostgreSQL at:', databaseUrl.replace(/:[^:@]+@/, ':****@'));
 
+const isLocalhost = databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
+const sanitizedUrl = databaseUrl.replace(/[?&]sslmode=[^&]+/g, '').replace(/\?$/, '');
+
 const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false },
+  connectionString: sanitizedUrl,
+  ssl: isLocalhost ? false : { rejectUnauthorized: false },
 });
 
 async function runMigration() {

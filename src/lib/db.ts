@@ -23,8 +23,9 @@ export function getPgPool(): Pool | null {
 
   if (!pgPool) {
     const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
+    const sanitizedUrl = url.replace(/[?&]sslmode=[^&]+/g, '').replace(/\?$/, '');
     pgPool = new Pool({
-      connectionString: url,
+      connectionString: sanitizedUrl,
       ssl: isLocalhost ? false : { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
