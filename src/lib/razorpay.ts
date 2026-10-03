@@ -1,9 +1,10 @@
 import crypto from 'crypto';
+import Razorpay from 'razorpay';
 
 export interface RazorpayOrderOptions {
   amountInPaise: number;
   currency?: string;
-  receipt: string;
+  receipt?: string;
   notes?: Record<string, string>;
 }
 
@@ -11,12 +12,15 @@ export interface RazorpayOrderResponse {
   id: string;
   amount: number;
   currency: string;
-  receipt: string;
+  receipt?: string;
   status: string;
 }
 
 export function getRazorpayKeys() {
-  const keyId = process.env.RAZORPAY_KEY_ID || '';
+  const keyId =
+    process.env.RAZORPAY_KEY_ID ||
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+    '';
   const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
@@ -29,9 +33,27 @@ export function getRazorpayKeys() {
   return { keyId, keySecret, webhookSecret, isConfigured };
 }
 
+let razorpayClient: Razorpay | null = null;
+
+export function getRazorpayInstance(): Razorpay {
+  const { keyId, keySecret } = getRazorpayKeys();
+  if (!keyId || !keySecret) {
+    const error: any = new Error('Authentication failed. Razorpay credentials are not configured.');
+    error.statusCode = 401;
+    throw error;
+  }
+  if (!razorpayClient) {
+    razorpayClient = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+  }
+  return razorpayClient;
+}
+
 /**
- * Creates a Razorpay order on Razorpay's API server-side.
- * Falls back to an authenticated test simulation if keys are dummy placeholders.
+ * Creates a Razorpay order on Razorpay API server-side.
+ * Uses HTTP Basic Authentication with credentials over HTTPS.
  */
 export async function createRazorpayOrder(
   options: RazorpayOrderOptions
@@ -47,36 +69,48 @@ export async function createRazorpayOrder(
         Authorization: `Basic ${auth}`,
       },
       body: JSON.stringify({
-        amount: options.amountInPaise,
+        amount: Math.round(options.amountInPaise),
         currency: options.currency || 'INR',
-        receipt: options.receipt,
+        receipt: (options.receipt || `rcpt_${Date.now()}`).slice(0, 40),
         notes: options.notes || {},
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Razorpay API error:', errorText);
-      throw new Error(`Razorpay order creation failed: ${response.status} ${errorText}`);
+      const err: any = new Error(
+        data?.error?.description || `Razorpay order creation failed with status ${response.status}`
+      );
+      err.statusCode = response.status;
+      err.error = data?.error;
+      throw err;
     }
 
-    const data = await response.json();
-    return data;
+    return {
+      id: data.id,
+      amount: Number(data.amount),
+      currency: data.currency,
+      receipt: (data.receipt as string) || options.receipt || '',
+      status: data.status,
+    };
   }
 
-  // Simulation mode for initial setup / local sandbox before live/test credentials are injected
+  // Simulation mode fallback for offline local testing
   console.log('[Razorpay Test Mode] Generating simulation order for:', options.receipt);
   return {
     id: `order_sim_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     amount: options.amountInPaise,
     currency: options.currency || 'INR',
-    receipt: options.receipt,
+    receipt: options.receipt || '',
     status: 'created',
   };
 }
 
 /**
  * Server-side payment verification using HMAC-SHA256 signature calculation.
+ * Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+ * Compare generated signature with razorpay_signature
  */
 export function verifyRazorpayPayment(params: {
   orderId: string;
@@ -88,11 +122,14 @@ export function verifyRazorpayPayment(params: {
 
   if (!isConfigured) {
     // In simulation mode, accept simulation signatures
-    if (orderId.startsWith('order_sim_') || signature.startsWith('sim_sig_') || signature === 'test_verified') {
+    if (
+      orderId.startsWith('order_sim_') ||
+      signature.startsWith('sim_sig_') ||
+      signature === 'test_verified'
+    ) {
       return true;
     }
-    // Still test HMAC calculation if secret provided
-    if (!keySecret) return true;
+    if (!keySecret) return false;
   }
 
   try {

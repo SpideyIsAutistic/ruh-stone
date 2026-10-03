@@ -140,6 +140,18 @@ export default function CartDrawer({
 
       const { orderId, razorpayOrderId, amount, currency, keyId } = orderData;
 
+      // Ensure Razorpay SDK script is loaded
+      if (typeof window !== 'undefined' && !window.Razorpay) {
+        await new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.async = true;
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+      }
+
       // 2. Trigger Razorpay Checkout Modal
       if (typeof window !== 'undefined' && window.Razorpay && !keyId.includes('placeholder')) {
         const rzpOptions = {

@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       razorpayOrderId: rzpOrder.id,
       amount: amountInPaise,
       currency: 'INR',
-      keyId: keyId || 'rzp_test_placeholder',
+      keyId: keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TjTlWcIAYsZ2hY',
     });
   } catch (error: any) {
     console.error('Error creating checkout order:', error);
