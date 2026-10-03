@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import ProductCardImage from './ProductCardImage';
 import { X, Check, ShoppingBag, MessageSquare, Sparkles } from 'lucide-react';
 import { CraftProduct, isProductInStock } from '@/types';
@@ -397,6 +398,13 @@ export default function ProductDetailModal({
                     : 'ENQUIRE WITH ARTISAN ATELIER'}
                 </span>
               </button>
+
+              <Link
+                href={`/products/${product.slug || product.id}`}
+                className="w-full text-center py-2 text-[10px] font-sans tracking-[0.24em] text-[#7A746C] hover:text-[#23201D] uppercase transition-colors block"
+              >
+                VIEW DEDICATED ARTISAN PAGE →
+              </Link>
             </div>
 
             {/* Recommended Pairing Card (Curated Companion Object) */}

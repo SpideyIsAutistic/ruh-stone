@@ -25,8 +25,12 @@ import {
   CheckCircle2,
   Tag,
   Percent,
+  Truck,
+  CreditCard,
+  ExternalLink,
+  RefreshCw,
 } from 'lucide-react';
-import { CraftProduct, CraftCategory, isProductInStock } from '@/types';
+import { CraftProduct, CraftCategory, isProductInStock, Order, OrderStatus } from '@/types';
 import { CRAFT_PRODUCTS } from '@/data/craftData';
 import ProductCardImage from '@/components/ProductCardImage';
 
@@ -36,7 +40,11 @@ export default function AdminPage() {
   const [passcodeError, setPasscodeError] = useState(false);
 
   const [products, setProducts] = useState<CraftProduct[]>(CRAFT_PRODUCTS);
-  const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'orders'>('list');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [orderFilter, setOrderFilter] = useState<string>('all');
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [adminCategoryFilter, setAdminCategoryFilter] = useState<CraftCategory>('All');
   const [editingPriceState, setEditingPriceState] = useState<{
     id: string;
@@ -83,6 +91,7 @@ export default function AdminPage() {
     const savedAuth = localStorage.getItem('ruh_admin_auth');
     if (savedAuth === 'true') {
       setIsAuthenticated(true);
+      fetchOrders();
     }
     fetchProducts();
   }, []);
@@ -100,6 +109,39 @@ export default function AdminPage() {
     }
   };
 
+  const fetchOrders = async () => {
+    setLoadingOrders(true);
+    try {
+      const res = await fetch('/api/admin/orders');
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data);
+      }
+    } catch (err) {
+      console.error('Failed to load orders', err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    setUpdatingOrderId(orderId);
+    try {
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, orderStatus: newStatus }),
+      });
+      if (res.ok) {
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error('Failed to update order status', err);
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // Atelier master PIN
@@ -107,6 +149,7 @@ export default function AdminPage() {
       setIsAuthenticated(true);
       localStorage.setItem('ruh_admin_auth', 'true');
       setPasscodeError(false);
+      fetchOrders();
     } else {
       setPasscodeError(true);
     }
@@ -624,6 +667,20 @@ export default function AdminPage() {
             }`}
           >
             CATALOGUE ({products.length})
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('orders');
+              fetchOrders();
+            }}
+            className={`text-xs uppercase tracking-widest px-3 py-1.5 border transition-all flex items-center space-x-1.5 ${
+              activeTab === 'orders'
+                ? 'border-[#23201D] bg-[#23201D] text-[#FAF7F2]'
+                : 'border-[#E8E0D2] text-[#23201D] hover:bg-[#ECE4D6]'
+            }`}
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span>ORDERS ({orders.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('create')}
@@ -1706,6 +1763,247 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* TAB 3: ORDERS & CONSIGNMENT FULFILLMENT */}
+        {activeTab === 'orders' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Header & Metrics */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E8E0D2] pb-6">
+              <div>
+                <h2 className="font-serif text-2xl text-[#23201D] font-light">
+                  Orders & Atelier Shipments
+                </h2>
+                <p className="text-xs text-[#7A746C] mt-1">
+                  Verified patron consignments, Razorpay payment audit, and Shiprocket white-glove logistics.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={fetchOrders}
+                  disabled={loadingOrders}
+                  className="px-3.5 py-2 border border-[#D1C2AC] text-xs uppercase tracking-wider text-[#23201D] hover:bg-[#ECE4D6] transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingOrders ? 'animate-spin' : ''}`} />
+                  <span>REFRESH</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics Ribbon */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-5">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block">
+                  Total Orders
+                </span>
+                <span className="font-serif text-2xl text-[#23201D] font-light mt-1 block">
+                  {orders.length}
+                </span>
+              </div>
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-5">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block">
+                  Verified Paid
+                </span>
+                <span className="font-serif text-2xl text-[#2A6638] font-light mt-1 block">
+                  {orders.filter((o) => o.paymentStatus === 'paid').length}
+                </span>
+              </div>
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-5">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block">
+                  Total Revenue
+                </span>
+                <span className="font-serif text-2xl text-[#23201D] font-light mt-1 block">
+                  ₹
+                  {orders
+                    .filter((o) => o.paymentStatus === 'paid')
+                    .reduce((sum, o) => sum + o.total, 0)
+                    .toLocaleString('en-IN')}
+                </span>
+              </div>
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-5">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block">
+                  Dispatched / Delivered
+                </span>
+                <span className="font-serif text-2xl text-[#AA9B87] font-light mt-1 block">
+                  {orders.filter((o) => o.orderStatus === 'shipped' || o.orderStatus === 'delivered').length}
+                </span>
+              </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center space-x-2 border-b border-[#E8E0D2] pb-3 text-xs overflow-x-auto">
+              {['all', 'paid', 'pending', 'shipped', 'delivered'].map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setOrderFilter(filter)}
+                  className={`px-3 py-1.5 uppercase tracking-wider text-[11px] transition-colors ${
+                    orderFilter === filter
+                      ? 'bg-[#23201D] text-[#FAF7F2]'
+                      : 'text-[#7A746C] hover:text-[#23201D]'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+
+            {/* Orders Listing */}
+            {orders.length === 0 ? (
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-12 text-center">
+                <Package className="w-10 h-10 text-[#D1C2AC] mx-auto mb-3 stroke-[1.2]" />
+                <h3 className="font-serif text-lg text-[#23201D]">No Orders Recorded Yet</h3>
+                <p className="text-xs text-[#7A746C] mt-1 max-w-sm mx-auto">
+                  Orders placed through Razorpay checkout will automatically appear here with complete patron and shipment telemetry.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {orders
+                  .filter((order) => {
+                    if (orderFilter === 'all') return true;
+                    if (orderFilter === 'paid') return order.paymentStatus === 'paid';
+                    if (orderFilter === 'pending') return order.paymentStatus === 'pending';
+                    if (orderFilter === 'shipped') return order.orderStatus === 'shipped';
+                    if (orderFilter === 'delivered') return order.orderStatus === 'delivered';
+                    return true;
+                  })
+                  .map((order) => (
+                    <div
+                      key={order.id}
+                      className="bg-[#FFFFFF] border border-[#E8E0D2] p-6 shadow-xs"
+                    >
+                      {/* Order Header */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#F2ECE1] gap-3">
+                        <div className="flex items-center space-x-3">
+                          <Link
+                            href={`/orders/${order.id}`}
+                            target="_blank"
+                            className="font-mono text-sm font-semibold text-[#23201D] hover:underline flex items-center space-x-1"
+                          >
+                            <span>{order.id}</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                          <span className="text-xs text-[#7A746C]">
+                            {new Date(order.createdAt).toLocaleString('en-IN', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                          <span
+                            className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 border ${
+                              order.paymentStatus === 'paid'
+                                ? 'bg-[#2A6638]/10 text-[#2A6638] border-[#2A6638]/30 font-medium'
+                                : order.paymentStatus === 'failed'
+                                ? 'bg-red-50 text-red-700 border-red-200'
+                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}
+                          >
+                            {order.paymentStatus === 'paid' ? '● Verified Paid' : order.paymentStatus}
+                          </span>
+
+                          <div className="flex items-center space-x-1.5">
+                            <span className="text-[10px] uppercase text-[#7A746C]">Status:</span>
+                            <select
+                              value={order.orderStatus}
+                              disabled={updatingOrderId === order.id}
+                              onChange={(e) =>
+                                handleUpdateOrderStatus(
+                                  order.id,
+                                  e.target.value as OrderStatus
+                                )
+                              }
+                              className="text-xs border border-[#D1C2AC] bg-[#FAF7F2] px-2 py-1 text-[#23201D] focus:outline-none"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="confirmed">Confirmed</option>
+                              <option value="processing">Processing</option>
+                              <option value="shipped">Shipped</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Order Details Body */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4">
+                        {/* Patron & Shipping (4 cols) */}
+                        <div className="md:col-span-4 text-xs space-y-2 border-r border-[#F2ECE1] pr-4">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block font-medium">
+                            Patron Delivery Details
+                          </span>
+                          <div className="font-medium text-[#23201D]">{order.customer.name}</div>
+                          <div className="text-[#57524A]">{order.customer.email}</div>
+                          <div className="text-[#57524A]">{order.customer.phone}</div>
+                          <div className="text-[#57524A] pt-1">
+                            {order.customer.address}, {order.customer.city} - {order.customer.pincode}
+                          </div>
+                          {order.customer.giftNote && (
+                            <div className="mt-2 p-2 bg-[#FAF7F2] border border-[#E8E0D2] italic text-[11px] text-[#57524A]">
+                              Note: {order.customer.giftNote}
+                            </div>
+                          )}
+
+                          <div className="pt-3 border-t border-[#F2ECE1] space-y-1 text-[11px]">
+                            {order.razorpayPaymentId && (
+                              <div className="text-[#7A746C]">
+                                Razorpay Ref: <span className="font-mono text-[#23201D]">{order.razorpayPaymentId}</span>
+                              </div>
+                            )}
+                            {order.shiprocketAWB && (
+                              <div className="text-[#7A746C]">
+                                Shiprocket AWB: <span className="font-mono text-[#23201D]">{order.shiprocketAWB}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Items Ordered (8 cols) */}
+                        <div className="md:col-span-8 space-y-3">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block font-medium">
+                            Consignment Items ({order.items.length})
+                          </span>
+
+                          <div className="divide-y divide-[#F2ECE1]">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="py-2.5 flex items-center justify-between text-xs">
+                                <div className="flex items-center space-x-3">
+                                  <div className="relative w-10 h-12 bg-[#ECE4D6] shrink-0 overflow-hidden">
+                                    <Image src={item.heroImage} alt={item.name} fill className="object-cover" />
+                                  </div>
+                                  <div>
+                                    <span className="font-serif text-sm text-[#23201D] block">{item.name}</span>
+                                    <span className="text-[11px] text-[#7A746C]">
+                                      Qty: {item.quantity} · {item.material || 'Handcrafted'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="font-serif text-xs text-[#23201D]">
+                                  ₹{(item.priceNumeric * item.quantity).toLocaleString('en-IN')}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex justify-between items-baseline pt-3 border-t border-[#23201D] text-xs">
+                            <span className="font-medium text-[#23201D] uppercase tracking-wider">
+                              Total Remittance
+                            </span>
+                            <span className="font-serif text-base font-semibold text-[#23201D]">
+                              ₹{order.total.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 

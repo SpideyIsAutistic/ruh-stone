@@ -101,3 +101,76 @@ export interface CartItem {
   quantity: number;
   selectedOption?: string;
 }
+
+export interface CustomerInfo {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  pincode: string;
+  state?: string;
+  country?: string;
+  giftNote?: string;
+}
+
+export interface OrderItem {
+  productId: string;
+  name: string;
+  slug: string;
+  heroImage: string;
+  priceNumeric: number;
+  priceFormatted: string;
+  quantity: number;
+  material?: string;
+}
+
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
+
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+
+export interface Order {
+  id: string;
+  customer: CustomerInfo;
+  items: OrderItem[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+  currency: 'INR';
+  paymentStatus: PaymentStatus;
+  orderStatus: OrderStatus;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  shiprocketOrderId?: number | string;
+  shiprocketShipmentId?: number | string;
+  shiprocketAWB?: string;
+  shiprocketCourier?: string;
+  shiprocketTrackingUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AbandonedCartSession {
+  id: string; // secure token
+  email: string;
+  customer?: Partial<CustomerInfo>;
+  items: Array<{
+    productId: string;
+    quantity: number;
+    priceNumeric: number;
+  }>;
+  subtotal: number;
+  createdAt: string;
+  updatedAt: string;
+  recovered: boolean;
+  reminderSentCount: number;
+  lastReminderAt?: string;
+}
+

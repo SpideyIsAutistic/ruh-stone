@@ -39,6 +39,25 @@ export const metadata: Metadata = {
     locale: 'en_IN',
     siteName: 'RUH STONE',
   },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+  },
+};
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'RUH STONE',
+  url: 'https://ruhstone.com',
+  logo: 'https://ruhstone.com/icon.png',
+  description:
+    'Thoughtfully crafted objects shaped by tradition, material and human hands. Contemporary Indian craftsmanship, hand-carved stone vessels, wheel-thrown ceramics, beaten kansa bronze, and sculptural decor.',
+  sameAs: ['https://www.instagram.com/ruhstonee'],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer care',
+    availableLanguage: ['English', 'Hindi'],
+  },
 };
 
 export default function RootLayout({
@@ -49,6 +68,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="bg-[#FAF7F2] text-[#23201D] font-sans antialiased selection:bg-[#D1C2AC]/50 selection:text-[#23201D] min-h-screen">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         {children}
       </body>
     </html>

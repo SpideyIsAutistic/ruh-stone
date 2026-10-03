@@ -173,6 +173,10 @@ export default function Home() {
         onRemoveItem={handleRemoveCartItem}
         onUpdateQuantity={handleUpdateQuantity}
         onClearCart={handleClearCart}
+        onRestoreCart={(restored) => {
+          setCartItems(restored);
+          setIsCartOpen(true);
+        }}
       />
 
       {/* Interactive Artisan Enquiry & Commission Modal */}

@@ -1,9 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { X, Trash2, Check, ArrowRight, ShoppingBag, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { X, Trash2, Check, ArrowRight, ShoppingBag, ShieldCheck, Loader2 } from 'lucide-react';
 import { CartItem, getEffectivePrice } from '@/types';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -12,6 +19,7 @@ interface CartDrawerProps {
   onRemoveItem: (index: number) => void;
   onUpdateQuantity: (index: number, quantity: number) => void;
   onClearCart: () => void;
+  onRestoreCart?: (items: CartItem[]) => void;
 }
 
 export default function CartDrawer({
@@ -21,6 +29,7 @@ export default function CartDrawer({
   onRemoveItem,
   onUpdateQuantity,
   onClearCart,
+  onRestoreCart,
 }: CartDrawerProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -31,8 +40,47 @@ export default function CartDrawer({
     pincode: '',
     giftNote: '',
   });
+
   const [submitted, setSubmitted] = useState(false);
+  const [confirmedOrderId, setConfirmedOrderId] = useState<string>('');
   const [step, setStep] = useState<'cart' | 'checkout'>('cart');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Load Razorpay Checkout Script
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.Razorpay) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  // Restore Cart from URL token (?restore=token)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const restoreToken = params.get('restore');
+    if (restoreToken) {
+      fetch(`/api/cart/restore?token=${restoreToken}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.items && data.items.length > 0) {
+            if (onRestoreCart) {
+              onRestoreCart(data.items);
+            }
+            if (data.customer) {
+              setFormData((prev) => ({
+                ...prev,
+                ...data.customer,
+              }));
+            }
+          }
+        })
+        .catch((err) => console.warn('Cart restoration error:', err));
+    }
+  }, [onRestoreCart]);
 
   if (!isOpen) return null;
 
@@ -42,14 +90,147 @@ export default function CartDrawer({
     0
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Email capture on blur for Abandoned Cart recovery automation
+  const handleEmailBlur = async () => {
+    if (!formData.email || !formData.email.includes('@') || items.length === 0) return;
+
+    try {
+      await fetch('/api/cart/capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          customer: formData,
+          items: items.map((i) => ({
+            productId: i.product.id,
+            quantity: i.quantity,
+            priceNumeric: getEffectivePrice(i.product).numeric,
+          })),
+          subtotal,
+        }),
+      });
+    } catch (e) {
+      // Background non-blocking capture
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setErrorMessage(null);
+    setIsProcessing(true);
+
+    try {
+      // 1. Create order on server (server validates prices and initiates Razorpay)
+      const res = await fetch('/api/checkout/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer: formData,
+          items: items.map((i) => ({
+            productId: i.product.id,
+            quantity: i.quantity,
+          })),
+        }),
+      });
+
+      const orderData = await res.json();
+      if (!res.ok || !orderData.success) {
+        throw new Error(orderData.error || 'Failed to initialize order');
+      }
+
+      const { orderId, razorpayOrderId, amount, currency, keyId } = orderData;
+
+      // 2. Trigger Razorpay Checkout Modal
+      if (typeof window !== 'undefined' && window.Razorpay && !keyId.includes('placeholder')) {
+        const rzpOptions = {
+          key: keyId,
+          amount: amount,
+          currency: currency || 'INR',
+          name: 'RUH STONE',
+          description: `Consignment of ${items.length} handcrafted pieces`,
+          image: '/icon.png',
+          order_id: razorpayOrderId,
+          prefill: {
+            name: formData.name,
+            email: formData.email,
+            contact: formData.phone,
+          },
+          theme: {
+            color: '#23201D',
+          },
+          handler: async function (response: any) {
+            // 3. Verify Payment on Server
+            const verifyRes = await fetch('/api/checkout/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              setConfirmedOrderId(orderId);
+              setSubmitted(true);
+              setIsProcessing(false);
+              onClearCart();
+            } else {
+              setErrorMessage(verifyData.error || 'Payment verification failed');
+              setIsProcessing(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessing(false);
+            },
+          },
+        };
+
+        const razorpayInstance = new window.Razorpay(rzpOptions);
+        razorpayInstance.on('payment.failed', function (resp: any) {
+          setErrorMessage(resp.error?.description || 'Payment was unsuccessful.');
+          setIsProcessing(false);
+        });
+        razorpayInstance.open();
+      } else {
+        // Test Simulation Mode (when test placeholders are in place without live keys)
+        // Automatically completes payment verification seamlessly
+        const verifyRes = await fetch('/api/checkout/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId,
+            razorpay_order_id: razorpayOrderId,
+            razorpay_payment_id: `pay_sim_${Date.now()}`,
+            razorpay_signature: 'test_verified',
+          }),
+        });
+
+        const verifyData = await verifyRes.json();
+        if (verifyData.success) {
+          setConfirmedOrderId(orderId);
+          setSubmitted(true);
+          setIsProcessing(false);
+          onClearCart();
+        } else {
+          setErrorMessage(verifyData.error || 'Payment verification failed');
+          setIsProcessing(false);
+        }
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      setErrorMessage(error.message || 'An unexpected error occurred during checkout');
+      setIsProcessing(false);
+    }
   };
 
   const handleReset = () => {
     onClearCart();
     setSubmitted(false);
+    setConfirmedOrderId('');
     setStep('cart');
     onClose();
   };
@@ -88,7 +269,7 @@ export default function CartDrawer({
           {/* Drawer Body */}
           <div className="flex-1 overflow-y-auto py-6">
             {submitted ? (
-              <div className="py-12 flex flex-col items-center text-center">
+              <div className="py-10 flex flex-col items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-[#3A3027] text-[#FAF7F2] flex items-center justify-center mb-4">
                   <Check className="w-6 h-6 stroke-[1.5]" />
                 </div>
@@ -98,18 +279,30 @@ export default function CartDrawer({
                 <p className="text-xs text-[#7A746C] leading-relaxed max-w-xs mb-6">
                   Thank you, {formData.name || 'Patron'}. Your handmade pieces are being carefully packaged with artisan provenance certificates.
                 </p>
-                <div className="bg-[#ECE4D6] p-4 text-[11px] font-mono text-[#23201D] w-full text-left mb-6 space-y-1">
-                  <div>REF: RUH-{(Math.random() * 80000 + 10000).toFixed(0)}</div>
+
+                <div className="bg-[#ECE4D6] p-4 text-[11px] font-mono text-[#23201D] w-full text-left mb-6 space-y-1.5">
+                  <div>REF: {confirmedOrderId}</div>
                   <div>RECIPIENT: {formData.name}</div>
                   <div>DESTINATION: {formData.city || 'India'}</div>
-                  <div>TOTAL: ₹{subtotal.toLocaleString('en-IN')}</div>
+                  <div>PAYMENT: VERIFIED PREPAID (RAZORPAY)</div>
+                  <div>SHIPPING: INSURED WHITE-GLOVE ATELIER</div>
                 </div>
-                <button
-                  onClick={handleReset}
-                  className="bg-[#23201D] text-[#FAF7F2] text-[11px] font-sans tracking-[0.2em] uppercase px-8 py-3.5 hover:bg-[#3A3027] transition-colors"
-                >
-                  RETURN TO ATELIER
-                </button>
+
+                <div className="w-full space-y-3">
+                  <Link
+                    href={`/orders/${confirmedOrderId}`}
+                    className="block w-full bg-[#23201D] text-[#FAF7F2] text-[11px] font-sans tracking-[0.2em] uppercase py-3.5 hover:bg-[#3A3027] transition-colors text-center"
+                  >
+                    TRACK CONSIGNMENT & PROVENANCE →
+                  </Link>
+
+                  <button
+                    onClick={handleReset}
+                    className="block w-full border border-[#D1C2AC] text-[#23201D] text-[10px] font-sans tracking-[0.2em] uppercase py-3 hover:bg-[#ECE4D6] transition-colors text-center"
+                  >
+                    RETURN TO ATELIER
+                  </button>
+                </div>
               </div>
             ) : items.length === 0 ? (
               <div className="py-20 flex flex-col items-center justify-center text-center">
@@ -226,8 +419,14 @@ export default function CartDrawer({
                 ))}
               </div>
             ) : (
-              /* Step 2: Shipping & Patron Details */
+              /* Step 2: Shipping & Patron Details with Live Validation */
               <form onSubmit={handleSubmit} className="space-y-4">
+                {errorMessage && (
+                  <div className="p-3 bg-[#8B3A2B]/10 border border-[#8B3A2B]/30 text-[#8B3A2B] text-xs">
+                    {errorMessage}
+                  </div>
+                )}
+
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block mb-1">
                     FULL NAME *
@@ -251,6 +450,7 @@ export default function CartDrawer({
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onBlur={handleEmailBlur}
                       className="w-full bg-[#FAF7F2] border border-[#D1C2AC] px-3.5 py-2.5 text-xs text-[#23201D] focus:border-[#23201D] focus:outline-none"
                     />
                   </div>
@@ -311,23 +511,37 @@ export default function CartDrawer({
 
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block mb-1">
-                    GIFT NOTE OR SPECIAL REQUESTS (OPTIONAL)
+                    GIFT NOTE OR BESPOKE REQUEST (OPTIONAL)
                   </label>
                   <input
                     type="text"
                     value={formData.giftNote}
                     onChange={(e) => setFormData({ ...formData, giftNote: e.target.value })}
-                    placeholder="Handwritten card note or bespoke packaging..."
+                    placeholder="Handwritten card note or special packaging..."
                     className="w-full bg-[#FAF7F2] border border-[#D1C2AC] px-3.5 py-2.5 text-xs text-[#23201D] focus:border-[#23201D] focus:outline-none"
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full bg-[#23201D] hover:bg-[#3A3027] text-[#FAF7F2] py-4 text-[11px] font-sans tracking-[0.22em] uppercase transition-colors mt-2"
-                >
-                  PLACE ORDER · ₹{subtotal.toLocaleString('en-IN')}
-                </button>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isProcessing}
+                    className="w-full bg-[#23201D] hover:bg-[#3A3027] text-[#FAF7F2] py-4 text-[11px] font-sans tracking-[0.22em] uppercase transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>PREPARING SECURE CHECKOUT...</span>
+                      </>
+                    ) : (
+                      <span>PAY VIA RAZORPAY · ₹{subtotal.toLocaleString('en-IN')}</span>
+                    )}
+                  </button>
+                  <p className="text-[10px] text-[#7A746C] text-center mt-2 flex items-center justify-center space-x-1">
+                    <ShieldCheck className="w-3.5 h-3.5 stroke-[1.5]" />
+                    <span>256-Bit Encrypted · Razorpay Verified Gateway</span>
+                  </p>
+                </div>
               </form>
             )}
           </div>
@@ -338,8 +552,8 @@ export default function CartDrawer({
               {step === 'cart' ? (
                 <>
                   <div className="flex items-center justify-between text-xs text-[#7A746C]">
-                    <span>Shipping</span>
-                    <span className="font-medium text-[#23201D]">Complimentary (India)</span>
+                    <span>Insured White-Glove Shipping</span>
+                    <span className="font-medium text-[#2A6638]">Complimentary (India)</span>
                   </div>
                   <div className="flex items-center justify-between text-sm font-medium text-[#23201D] pt-1">
                     <span>Subtotal</span>
