@@ -44,6 +44,9 @@ export interface CraftProduct {
   salePriceNumeric?: number;
   stockQuantity?: number;
   isOutOfStock?: boolean;
+  sku?: string;
+  isPublished?: boolean;
+  status?: 'published' | 'draft';
 }
 
 export function isProductInStock(product: CraftProduct): boolean {

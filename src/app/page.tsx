@@ -30,11 +30,11 @@ export default function Home() {
     fetch('/api/products')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setProducts(data);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error('Error fetching storefront products:', err));
   }, []);
 
   const handleAddToCart = (product: CraftProduct, quantity: number = 1) => {

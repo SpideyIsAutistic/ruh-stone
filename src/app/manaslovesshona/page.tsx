@@ -84,6 +84,8 @@ export default function AdminPage() {
   });
 
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check stored session
@@ -389,6 +391,9 @@ export default function AdminPage() {
       },
     };
 
+    setIsSubmitting(true);
+    setPublishError(null);
+
     try {
       const isEdit = Boolean(editingProductId);
       const res = await fetch('/api/products', {
@@ -397,32 +402,26 @@ export default function AdminPage() {
         body: JSON.stringify(productPayload),
       });
 
-      if (res.ok) {
-        if (isEdit) {
-          setProducts(products.map((p) => (p.id === editingProductId ? productPayload : p)));
-        } else {
-          setProducts([productPayload, ...products]);
-        }
-        setPublishSuccess(true);
-        setTimeout(() => {
-          setPublishSuccess(false);
-          resetForm();
-          setActiveTab('list');
-        }, 1500);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Server rejected database write');
       }
-    } catch {
-      // Local fallback
-      if (editingProductId) {
-        setProducts(products.map((p) => (p.id === editingProductId ? productPayload : p)));
-      } else {
-        setProducts([productPayload, ...products]);
-      }
+
+      // Re-fetch products from persistent database to guarantee state matches DB
+      await fetchProducts();
+
       setPublishSuccess(true);
       setTimeout(() => {
         setPublishSuccess(false);
         resetForm();
         setActiveTab('list');
       }, 1500);
+    } catch (err: any) {
+      console.error('Failed to save product to persistent database:', err);
+      setPublishError(err.message || 'Database write failed. Product was not saved.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -452,17 +451,21 @@ export default function AdminPage() {
     }
 
     try {
-      await fetch('/api/products', {
+      const res = await fetch('/api/products', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       });
-    } catch {
-      // Local fallback
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update price in database');
+      }
+      await fetchProducts();
+      setEditingPriceState(null);
+    } catch (err: any) {
+      console.error('Price update database error:', err);
+      alert(`Database Error: ${err.message}`);
     }
-
-    setProducts(products.map((p) => (p.id === product.id ? updated : p)));
-    setEditingPriceState(null);
   };
 
   // Quick One-Click Sale Toggle
@@ -481,16 +484,20 @@ export default function AdminPage() {
     };
 
     try {
-      await fetch('/api/products', {
+      const res = await fetch('/api/products', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       });
-    } catch {
-      // Local fallback
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update sale status in database');
+      }
+      await fetchProducts();
+    } catch (err: any) {
+      console.error('Sale toggle database error:', err);
+      alert(`Database Error: ${err.message}`);
     }
-
-    setProducts(products.map((p) => (p.id === product.id ? updated : p)));
   };
 
   // Quick One-Click Out of Stock Toggle
@@ -506,16 +513,20 @@ export default function AdminPage() {
         : 5,
     };
 
-    setProducts(products.map((p) => (p.id === product.id ? updated : p)));
-
     try {
-      await fetch('/api/products', {
+      const res = await fetch('/api/products', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       });
-    } catch {
-      // Local fallback
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update stock in database');
+      }
+      await fetchProducts();
+    } catch (err: any) {
+      console.error('Stock toggle database error:', err);
+      alert(`Database Error: ${err.message}`);
     }
   };
 
@@ -529,16 +540,20 @@ export default function AdminPage() {
       isOutOfStock: nextQty === 0,
     };
 
-    setProducts(products.map((p) => (p.id === product.id ? updated : p)));
-
     try {
-      await fetch('/api/products', {
+      const res = await fetch('/api/products', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       });
-    } catch {
-      // Local fallback
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to adjust stock in database');
+      }
+      await fetchProducts();
+    } catch (err: any) {
+      console.error('Stock adjust database error:', err);
+      alert(`Database Error: ${err.message}`);
     }
   };
 
@@ -553,31 +568,39 @@ export default function AdminPage() {
       isOutOfStock: qty === 0,
     };
 
-    setProducts(products.map((p) => (p.id === product.id ? updated : p)));
-    setEditingStockId(null);
-
     try {
-      await fetch('/api/products', {
+      const res = await fetch('/api/products', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       });
-    } catch {
-      // Local fallback
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save stock in database');
+      }
+      await fetchProducts();
+      setEditingStockId(null);
+    } catch (err: any) {
+      console.error('Inline stock database error:', err);
+      alert(`Database Error: ${err.message}`);
     }
   };
 
-  // Delete Product
+  // Delete Product Permanently from Database
   const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this piece from the store?')) return;
+    if (!confirm('Are you sure you want to permanently remove this piece from the database?')) return;
 
     try {
-      await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
-    } catch {
-      // Local fallback
+      const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to delete piece from database');
+      }
+      await fetchProducts();
+    } catch (err: any) {
+      console.error('Delete product database error:', err);
+      alert(`Database Error: ${err.message}`);
     }
-
-    setProducts(products.filter((p) => p.id !== id));
   };
 
   // 1. Password Protection Screen
@@ -1596,18 +1619,29 @@ export default function AdminPage() {
                 </div>
 
                 {/* Submit Action */}
-                <div className="pt-4 border-t border-[#E8E0D2] flex items-center justify-between">
+                <div className="pt-4 border-t border-[#E8E0D2] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <button
                     type="submit"
-                    className="bg-[#23201D] hover:bg-[#3A3027] text-[#FAF7F2] px-8 py-4 text-[11px] font-sans tracking-[0.22em] uppercase transition-colors"
+                    disabled={isSubmitting}
+                    className="bg-[#23201D] hover:bg-[#3A3027] text-[#FAF7F2] px-8 py-4 text-[11px] font-sans tracking-[0.22em] uppercase transition-colors disabled:opacity-50"
                   >
-                    {editingProductId ? 'UPDATE PIECE IN LIVE STOREFRONT →' : 'PUBLISH TO LIVE STOREFRONT →'}
+                    {isSubmitting
+                      ? 'SAVING TO DATABASE...'
+                      : editingProductId
+                      ? 'UPDATE PIECE IN LIVE STOREFRONT →'
+                      : 'PUBLISH TO LIVE STOREFRONT →'}
                   </button>
 
                   {publishSuccess && (
                     <span className="text-xs text-green-800 font-medium flex items-center space-x-1.5">
                       <Check className="w-4 h-4 text-green-800" />
-                      <span>{editingProductId ? 'Product Updated Successfully!' : 'Product Published Successfully!'}</span>
+                      <span>{editingProductId ? 'Product Updated in Database!' : 'Product Saved in Database!'}</span>
+                    </span>
+                  )}
+
+                  {publishError && (
+                    <span className="text-xs text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 font-medium">
+                      {publishError}
                     </span>
                   )}
                 </div>
