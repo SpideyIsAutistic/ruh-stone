@@ -1,130 +1,84 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ArrowDown, Compass } from 'lucide-react';
 
-export default function Hero() {
+interface HeroProps {
+  onExploreClick?: () => void;
+}
+
+export default function Hero({ onExploreClick }: HeroProps) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 80);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <section className="relative min-h-[92vh] lg:min-h-screen flex items-center bg-[#F2EBDD] text-[#241A14] overflow-hidden pt-24 pb-16 md:pt-32 md:pb-24 plaster-texture">
-      {/* Subtle Architectural Jaali Lattice Background Overlay */}
-      <div className="absolute inset-0 bg-jaali-subtle opacity-35 pointer-events-none" />
+    <section className="relative w-full h-[85vh] min-h-[580px] max-h-[920px] overflow-hidden bg-[#ECE4D6]">
+      {/* Background: Curated Handcrafted Objects in a Warm Minimalist Limewash Interior */}
+      <div
+        className={`absolute inset-0 transition-all duration-1000 ease-out ${
+          loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.03]'
+        }`}
+      >
+        <Image
+          src="/images/ruh-stone-banner-new.png"
+          alt="Curated handcrafted silverware, brass ritual pieces, and keepsake box"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
 
-      {/* Warm Golden Hour Light Gradient Overlay */}
-      <div className="absolute top-0 right-0 w-[55vw] h-[55vw] bg-radial from-[#D8C5A5]/40 via-[#B98B62]/10 to-transparent pointer-events-none rounded-full blur-3xl" />
+        {/* Subtle Warm Gradient Overlay for Legibility & Calm Lighting */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#23201D]/60 via-[#23201D]/20 to-black/25" />
+      </div>
 
-      <div className="relative max-w-7xl mx-auto px-6 md:px-12 w-full">
-        {/* Asymmetrical Editorial Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          
-          {/* LEFT COLUMN: Architectural Plaque & Refined Brand Narrative */}
-          <div className="lg:col-span-6 flex flex-col justify-center space-y-8 z-10">
-            {/* Atelier Geographical Registry */}
-            <div className="inline-flex items-center space-x-3 text-[10px] font-sans uppercase tracking-[0.3em] text-[#6E3027] font-semibold border-b border-[#D8C5A5] pb-3 max-w-fit">
-              <span className="w-2 h-2 rotate-45 bg-[#6E3027]" />
-              <span>MARWAR & MEWAR · 26.9124° N, 75.7873° E</span>
-            </div>
-
-            {/* Refined Brand Mark */}
-            <div className="space-y-3">
-              <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl tracking-[0.14em] text-[#241A14] font-light leading-[1.05]">
-                RUH STONE
-              </h1>
-              <p className="font-serif italic text-2xl sm:text-3xl text-[#6E3027] tracking-wide">
-                Soul in Stone.
-              </p>
-            </div>
-
-            {/* Core Manifesto Statement per user specification */}
-            <div className="space-y-4 max-w-lg">
-              <p className="font-serif text-2xl sm:text-3xl text-[#382A22] font-light leading-snug">
-                Objects shaped by earth, <br />
-                <span className="italic text-[#9B5540]">hand and time.</span>
-              </p>
-              <p className="text-sm font-sans text-[#524035] font-light leading-relaxed">
-                A contemporary Rajasthan haveli transformed into an architectural craft house. We hand-carve monumental desert sandstone, chase traditional German silver, and conserve centuries-old architectural heirlooms.
-              </p>
-            </div>
-
-            {/* Editorial Action Bar */}
-            <div className="pt-2 flex flex-wrap items-center gap-5">
-              <a
-                href="#collection"
-                data-cursor="pointer"
-                className="px-7 py-3.5 bg-[#241A14] hover:bg-[#6E3027] text-[#F2EBDD] text-xs font-sans uppercase tracking-[0.25em] font-medium transition-all duration-300 shadow-[0_4px_16px_rgba(36,26,20,0.15)]"
-              >
-                ENTER THE SANCTUARY
-              </a>
-              <a
-                href="#story"
-                data-cursor="pointer"
-                className="px-6 py-3.5 border border-[#B98B62] text-[#241A14] hover:bg-[#D8C5A5]/30 text-xs font-sans uppercase tracking-[0.25em] font-medium transition-all duration-300"
-              >
-                OUR HERITAGE
-              </a>
-            </div>
-
-            {/* Material Chips */}
-            <div className="pt-6 border-t border-[#D8C5A5] flex flex-wrap gap-2 text-[10px] font-sans uppercase tracking-[0.2em] text-[#8C613C]">
-              <span className="px-3 py-1 bg-[#E7DBCA]/70 border border-[#D8C5A5]">JODHPUR ROSE SANDSTONE</span>
-              <span className="px-3 py-1 bg-[#E7DBCA]/70 border border-[#D8C5A5]">MAKRANA CALCITE MARBLE</span>
-              <span className="px-3 py-1 bg-[#E7DBCA]/70 border border-[#D8C5A5]">CHASED GERMAN SILVER</span>
-            </div>
+      {/* Minimal Overlaid Typography (Exact User Copy) */}
+      <div className="relative h-full max-w-[1400px] mx-auto px-6 md:px-12 flex flex-col justify-end pb-16 md:pb-24 text-[#FAF7F2]">
+        <div
+          className={`max-w-2xl transition-all duration-1000 delay-150 ease-out ${
+            loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          {/* Brand Kicker */}
+          <div className="flex items-center space-x-3 mb-4">
+            <span className="w-6 h-[1px] bg-[#FAF7F2]/60" />
+            <span className="text-[11px] uppercase tracking-[0.32em] text-[#FAF7F2]/90 font-medium">
+              RUH STONE
+            </span>
           </div>
 
-          {/* RIGHT COLUMN: Large Vertical Architectural Photograph */}
-          <div className="lg:col-span-6 relative">
-            <div className="relative aspect-[3/4] max-w-lg mx-auto w-full overflow-hidden border border-[#B98B62]/60 p-3 bg-[#E7DBCA] shadow-[0_20px_50px_rgba(185,139,98,0.22)]">
-              {/* Corner Cinnabar Architectural Brackets */}
-              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#6E3027] z-20 pointer-events-none" />
-              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#6E3027] z-20 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[#6E3027] z-20 pointer-events-none" />
-              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#6E3027] z-20 pointer-events-none" />
+          {/* Main Headline */}
+          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-[#FAF7F2] font-light leading-[1.08] mb-5">
+            THE BEAUTY
+            <br />
+            OF THE HANDMADE.
+          </h1>
 
-              {/* Haveli Architecture Imagery */}
-              <div className="relative w-full h-full overflow-hidden">
-                <Image
-                  src="https://images.unsplash.com/photo-1599661046289-e31897846e41?q=80&w=1600&auto=format&fit=crop"
-                  alt="Historic Rajasthan haveli courtyard with carved sandstone pillars at golden hour"
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 45vw"
-                  className="object-cover object-center filter contrast-105 brightness-98 transition-transform duration-1000 ease-out hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#241A14]/35 via-transparent to-transparent pointer-events-none" />
-              </div>
+          {/* Supporting Line */}
+          <p className="text-sm md:text-base text-[#FAF7F2]/90 font-light leading-relaxed max-w-lg mb-8 tracking-wide">
+            Thoughtfully crafted objects shaped by tradition, craftsmanship and human hands.
+          </p>
 
-              {/* Architectural Inset Plaque */}
-              <div className="absolute bottom-6 left-6 right-6 z-10 p-3.5 bg-[#F2EBDD]/95 border border-[#B98B62] backdrop-blur-sm flex items-center justify-between">
-                <div>
-                  <span className="text-[9px] font-sans tracking-[0.25em] text-[#6E3027] uppercase block font-semibold">
-                    COURTYARD ARCHIVE · JAIPUR
-                  </span>
-                  <p className="font-serif italic text-xs text-[#241A14] mt-0.5">
-                    "Morning sunlight filtering through hand-chiseled sandstone arches."
-                  </p>
-                </div>
-                <Compass className="w-4 h-4 text-[#9B5540] flex-shrink-0" />
-              </div>
-            </div>
+          {/* Minimalist CTA */}
+          <div>
+            <a
+              href="#featured"
+              onClick={(e) => {
+                if (onExploreClick) {
+                  e.preventDefault();
+                  onExploreClick();
+                }
+              }}
+              className="inline-flex items-center space-x-3 border border-[#FAF7F2]/70 hover:border-[#FAF7F2] bg-[#FAF7F2]/10 hover:bg-[#FAF7F2] text-[#FAF7F2] hover:text-[#23201D] px-8 py-3.5 text-[11px] font-sans tracking-[0.24em] uppercase transition-all duration-300"
+            >
+              <span>EXPLORE COLLECTION</span>
+              <span className="text-xs">→</span>
+            </a>
           </div>
-        </div>
-
-        {/* BOTTOM: Minimalist Scroll Invitation */}
-        <div className="mt-16 pt-8 border-t border-[#D8C5A5] flex items-center justify-between text-xs font-sans text-[#8C613C] tracking-[0.25em] uppercase">
-          <div className="flex items-center space-x-3">
-            <span className="h-[1px] w-12 bg-[#B98B62]" />
-            <span>VOLUME I · AUTUMN EXHIBITION</span>
-          </div>
-
-          <a
-            href="#collection"
-            data-cursor="pointer"
-            className="flex items-center space-x-2 text-[#241A14] hover:text-[#6E3027] transition-colors"
-          >
-            <span>SCROLL TO EXPLORE</span>
-            <ArrowDown className="w-3.5 h-3.5 animate-bounce" />
-          </a>
         </div>
       </div>
     </section>

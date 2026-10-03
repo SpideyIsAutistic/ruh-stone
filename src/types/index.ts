@@ -1,100 +1,102 @@
-export type ProductCategory = 'STONE' | 'GERMAN SILVER' | 'ARTIFACTS' | 'COLLECTOR\'S EDITIONS';
+export type CraftCategory =
+  | 'All'
+  | 'German Silver'
+  | 'Marble'
+  | 'Fibre';
 
-export interface ProductDetailSection {
-  title: string;
-  subtitle: string;
-  description: string;
-  imageUrl: string;
-  macroCaption?: string;
-}
-
-export interface CraftObject {
+export interface CraftProduct {
   id: string;
   name: string;
-  subtitle: string;
-  category: ProductCategory;
+  slug: string;
+  category: CraftCategory;
   material: string;
+  craftTechnique: string;
   origin: string;
-  dimensions: string;
-  weight: string;
-  craft: string;
-  edition: string;
-  leadTime: string;
-  priceFormatted: string;
+  artisanGuild?: string;
+  dimensions?: string;
+  weight?: string;
+  price: string;
   priceNumeric: number;
   shortDescription: string;
+  editorialQuote: string;
+  longDescription: string;
   heroImage: string;
-  galleryImages: string[];
-  theMaterial: ProductDetailSection;
-  theHand: ProductDetailSection;
-  theDetail: ProductDetailSection;
-  theStory: ProductDetailSection;
-  conservationCare: string[];
-  provenance: {
-    quarryLocation: string;
-    artisanGuild: string;
-    yearCrafted: string;
-    certificateNumber: string;
+  galleryImages: {
+    url: string;
+    label: string;
+    caption: string;
+  }[];
+  theMaking: {
+    materialSourcing: string;
+    handTechnique: string;
+    finishDetails: string;
+    careInstructions: string[];
+    artisanNote: string;
+    makingImage: string;
+  };
+  featuredInTrio?: boolean;
+  trioSubtitle?: string;
+  images?: string[];
+  imageFit?: 'contain' | 'cover';
+  isOnSale?: boolean;
+  salePrice?: string;
+  salePriceNumeric?: number;
+  stockQuantity?: number;
+  isOutOfStock?: boolean;
+}
+
+export function isProductInStock(product: CraftProduct): boolean {
+  if (product.isOutOfStock === true) return false;
+  if (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0) return false;
+  return true;
+}
+
+export function getEffectivePrice(product: CraftProduct): {
+  price: string;
+  numeric: number;
+  isOnSale: boolean;
+} {
+  if (product.isOnSale && product.salePriceNumeric && product.salePriceNumeric > 0) {
+    return {
+      price: product.salePrice || `₹${product.salePriceNumeric.toLocaleString('en-IN')}`,
+      numeric: product.salePriceNumeric,
+      isOnSale: true,
+    };
+  }
+  return {
+    price: product.price,
+    numeric: product.priceNumeric,
+    isOnSale: false,
   };
 }
 
-export interface RajasthanLocation {
+export function getProductImages(product: CraftProduct): string[] {
+  if (product.images && product.images.length > 0) {
+    return product.images;
+  }
+  const urls: string[] = [];
+  if (product.heroImage) urls.push(product.heroImage);
+  if (product.galleryImages && Array.isArray(product.galleryImages)) {
+    product.galleryImages.forEach((g) => {
+      if (g.url && !urls.includes(g.url)) {
+        urls.push(g.url);
+      }
+    });
+  }
+  return urls;
+}
+
+export interface CollectionCategory {
   id: string;
   name: string;
-  coordinates: { x: number; y: number }; // percentage on SVG map
   tagline: string;
-  quote: string;
-  story: string;
-  materials: string[];
-  artisanLegacy: string;
-  imageUrl: string;
-  featuredArtifactName: string;
+  itemCount: number;
+  image: string;
+  filterCategory: CraftCategory;
 }
 
-export interface CraftProcessStep {
-  step: string;
-  title: string;
-  stageName: string;
-  subtitle: string;
-  description: string;
-  artisanQuote: string;
-  artisanRole: string;
-  toolsUsed: string[];
-  imageUrl: string;
-  audioAtmosphere?: string;
-}
-
-export interface MaterialSpec {
-  id: 'stone' | 'silver' | 'artifacts';
-  name: string;
-  subhead: string;
-  heritageStory: string;
-  tactileDescription: string;
-  aestheticQualities: string[];
-  originRegions: string[];
-  textureType: 'sandstone' | 'silver' | 'patina';
-  bgClass: string;
-  heroImage: string;
-}
-
-export interface JournalArticle {
-  id: string;
-  title: string;
-  category: string;
-  readTime: string;
-  date: string;
-  excerpt: string;
-  author: string;
-  authorTitle: string;
-  coverImage: string;
-  contentParagraphs: string[];
-  pullQuote: string;
-  subheading: string;
-  secondaryImage: string;
-}
-
-export interface AcquisitionItem {
-  product: CraftObject;
+export interface CartItem {
+  product: CraftProduct;
   quantity: number;
-  notes?: string;
+  selectedOption?: string;
 }

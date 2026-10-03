@@ -1,318 +1,495 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { CraftObject } from '@/types';
-import { X, Check, ShieldCheck, Truck, Sparkles } from 'lucide-react';
+import ProductCardImage from './ProductCardImage';
+import { X, Check, ShoppingBag, MessageSquare, Sparkles } from 'lucide-react';
+import { CraftProduct, isProductInStock } from '@/types';
+import { CRAFT_PRODUCTS } from '@/data/craftData';
 
 interface ProductDetailModalProps {
-  product: CraftObject | null;
+  product: CraftProduct | null;
   onClose: () => void;
-  onAddToCollection: (product: CraftObject) => void;
-  isAlreadyInCollection: boolean;
+  onAddToCart: (product: CraftProduct, quantity: number) => void;
+  onOpenEnquiry: (product: CraftProduct) => void;
+  onSelectRelated: (product: CraftProduct) => void;
 }
 
 export default function ProductDetailModal({
   product,
   onClose,
-  onAddToCollection,
-  isAlreadyInCollection,
+  onAddToCart,
+  onOpenEnquiry,
+  onSelectRelated,
 }: ProductDetailModalProps) {
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [addedSuccess, setAddedSuccess] = useState(false);
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
     if (product) {
-      if (!dialog.open) {
-        dialog.showModal();
-        document.body.style.overflow = 'hidden';
-      }
+      setActiveImageIndex(0);
+      setQuantity(1);
+      setAddedSuccess(false);
+      document.body.style.overflow = 'hidden';
     } else {
-      if (dialog.open) {
-        dialog.close();
-        document.body.style.overflow = '';
-      }
+      document.body.style.overflow = 'unset';
     }
-
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = 'unset';
     };
   }, [product]);
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const rect = dialog.getBoundingClientRect();
-    const isInside =
-      rect.top <= e.clientY &&
-      e.clientY <= rect.top + rect.height &&
-      rect.left <= e.clientX &&
-      e.clientX <= rect.left + rect.width;
-    if (!isInside) {
-      onClose();
-    }
-  };
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (!product) return;
+      if (e.key === 'ArrowRight') {
+        setActiveImageIndex((prev) => (prev + 1) % product.galleryImages.length);
+      }
+      if (e.key === 'ArrowLeft') {
+        setActiveImageIndex((prev) => (prev - 1 + product.galleryImages.length) % product.galleryImages.length);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, product]);
 
   if (!product) return null;
 
+  const inStock = isProductInStock(product);
+  const maxStock = typeof product.stockQuantity === 'number' ? product.stockQuantity : 99;
+
+  const handleAdd = () => {
+    if (!inStock) return;
+    onAddToCart(product, quantity);
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 2200);
+  };
+
+  const relatedProducts = CRAFT_PRODUCTS.filter(
+    (p) => p.id !== product.id && (p.category === product.category || Math.random() > 0.4)
+  ).slice(0, 3);
+
+  const galleryList = product.galleryImages && product.galleryImages.length > 0
+    ? product.galleryImages
+    : [{ url: product.heroImage, label: 'Primary View', caption: product.shortDescription }];
+
+  const currentGalleryImage = galleryList[activeImageIndex] || galleryList[0];
+
   return (
-    <dialog
-      ref={dialogRef}
-      onClick={handleBackdropClick}
-      onCancel={onClose}
-      className="fixed inset-0 m-auto z-50 w-full max-w-5xl max-h-[92vh] overflow-y-auto bg-[#F9F6F0] text-[#241A14] border border-[#B98B62] p-0 shadow-[0_24px_80px_rgba(36,26,20,0.35)] backdrop:bg-[#241A14]/70 backdrop:backdrop-blur-sm rounded-sm focus:outline-none wasli-paper"
-    >
-      {/* Sticky Header with Close Button */}
-      <div className="sticky top-0 z-30 flex items-center justify-between px-6 md:px-10 py-5 bg-[#F2EBDD]/95 backdrop-blur-md border-b border-[#D8C5A5]">
-        <div className="flex items-center space-x-3">
-          <span className="w-2 h-2 rotate-45 bg-[#6E3027]" />
-          <span className="text-[10px] font-sans tracking-[0.3em] uppercase text-[#6E3027] font-semibold">
-            {product.category} · {product.edition}
-          </span>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#FAF7F2] animate-in fade-in duration-300">
+      {/* Top Header Bar */}
+      <header className="sticky top-0 z-20 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8E0D2] px-6 md:px-12 py-5 flex items-center justify-between">
+        <div className="flex items-center space-x-2 text-[10px] md:text-[11px] font-sans tracking-[0.24em] uppercase text-[#7A746C]">
+          <span>RUH STONE</span>
+          <span>/</span>
+          <span>COLLECTION</span>
+          <span>/</span>
+          <span className="text-[#23201D] font-medium">{product.name}</span>
         </div>
 
         <button
           onClick={onClose}
-          data-cursor="pointer"
-          aria-label="Close exhibition modal"
-          className="p-2 text-[#8C613C] hover:text-[#241A14] hover:bg-[#E7DBCA] transition-colors rounded-sm"
+          className="flex items-center space-x-2 text-[11px] font-sans tracking-[0.2em] uppercase text-[#23201D] hover:text-[#AA9B87] transition-colors p-1"
+          aria-label="Close product view"
         >
-          <X className="w-5 h-5" />
+          <span className="hidden sm:inline">CLOSE</span>
+          <X className="w-5 h-5 stroke-[1.5]" />
         </button>
-      </div>
+      </header>
 
-      <div className="px-6 md:px-12 py-8 md:py-12 space-y-14">
-        {/* Title & Archival Introduction */}
-        <div className="text-center max-w-3xl mx-auto space-y-3">
-          <span className="text-xs uppercase font-sans tracking-[0.3em] text-[#6E3027] font-semibold">
-            ORIGIN: {product.origin}
-          </span>
-          <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#241A14] tracking-[0.06em] font-light">
-            {product.name}
-          </h2>
-          <p className="font-serif italic text-lg sm:text-xl text-[#9B5540]">
-            {product.subtitle}
-          </p>
-          <p className="text-sm font-sans text-[#524035] leading-relaxed max-w-xl mx-auto pt-2">
-            {product.shortDescription}
-          </p>
-        </div>
+      {/* Main Container */}
+      <div className="max-w-[1300px] mx-auto px-6 md:px-12 py-8 md:py-12">
+        {/* Two-Column Detail Layout: Large Product Photography Left, Specs Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+          {/* Left Column: Image Gallery (6 Cols) */}
+          <div className="lg:col-span-6 flex flex-col space-y-4">
+            {/* Primary Large Image - 4:5 Portrait Ratio to prevent cropping the product */}
+            <div className="group relative aspect-[4/5] w-full max-h-[640px] overflow-hidden bg-[#ECE4D6]">
+              <Image
+                src={currentGalleryImage.url}
+                alt={currentGalleryImage.label}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover object-center transition-all duration-700"
+              />
 
-        {/* Hero Environmental View */}
-        <div className="relative aspect-[16/9] w-full overflow-hidden border border-[#D8C5A5] bg-[#E7DBCA]">
-          <Image
-            src={product.heroImage}
-            alt={product.name}
-            fill
-            sizes="(max-width: 1024px) 100vw, 90vw"
-            className="object-cover object-center filter contrast-105"
-          />
-          <div className="absolute bottom-4 left-4 z-10 px-3 py-1 bg-[#F2EBDD]/90 backdrop-blur-sm border border-[#D8C5A5] text-[10px] uppercase font-sans tracking-[0.2em] text-[#6E3027] font-semibold">
-            PRIMARY MONOLITH VIEW · HAVELI GALLERY LIGHTING
-          </div>
-        </div>
+              {/* Sold Out Overlay Badge */}
+              {!inStock && (
+                <div className="absolute top-4 left-4 z-10">
+                  <span className="bg-[#5C554E] text-[#FAF7F2] text-[10px] font-sans tracking-[0.25em] uppercase px-3 py-1 font-medium shadow-md">
+                    SOLD OUT
+                  </span>
+                </div>
+              )}
 
-        {/* Material & Craft Specifications Matrix */}
-        <div className="p-6 md:p-8 bg-[#EDE4D3] border border-[#D8C5A5] grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div>
-            <span className="text-[10px] font-sans tracking-[0.25em] text-[#8C613C] uppercase block font-semibold">
-              MATERIAL
-            </span>
-            <p className="font-serif text-base text-[#241A14] mt-1 font-medium">{product.material}</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-sans tracking-[0.25em] text-[#8C613C] uppercase block font-semibold">
-              DIMENSIONS
-            </span>
-            <p className="font-serif text-base text-[#241A14] mt-1 font-medium">{product.dimensions}</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-sans tracking-[0.25em] text-[#8C613C] uppercase block font-semibold">
-              WEIGHT
-            </span>
-            <p className="font-serif text-base text-[#241A14] mt-1 font-medium">{product.weight}</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-sans tracking-[0.25em] text-[#8C613C] uppercase block font-semibold">
-              CRAFT DISCIPLINE
-            </span>
-            <p className="font-serif text-base text-[#241A14] mt-1 font-medium">{product.craft}</p>
-          </div>
-        </div>
+              {/* Angle Counter Badge */}
+              {galleryList.length > 1 && (
+                <div className="absolute top-4 right-4 z-10 bg-[#23201D]/75 backdrop-blur-sm text-[#FAF7F2] text-[10px] uppercase tracking-[0.2em] px-2.5 py-1">
+                  Angle {activeImageIndex + 1} of {galleryList.length}
+                </div>
+              )}
 
-        {/* SECTION 1: THE MATERIAL */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center pt-2">
-          <div className="md:col-span-6 relative aspect-[4/3] w-full overflow-hidden border border-[#D8C5A5] bg-[#E7DBCA]">
-            <Image
-              src={product.theMaterial.imageUrl}
-              alt={product.theMaterial.title}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover object-center filter contrast-105"
-            />
-          </div>
-          <div className="md:col-span-6 space-y-4 md:pl-6">
-            <span className="text-[10px] font-sans tracking-[0.35em] text-[#6E3027] uppercase font-bold">
-              {product.theMaterial.title}
-            </span>
-            <h3 className="font-serif text-2xl md:text-3xl text-[#241A14] font-light">
-              {product.theMaterial.subtitle}
-            </h3>
-            <p className="text-sm font-sans text-[#524035] font-light leading-relaxed">
-              {product.theMaterial.description}
-            </p>
-            {product.theMaterial.macroCaption && (
-              <p className="text-[11px] font-sans italic text-[#8C613C] pt-2 border-t border-[#D8C5A5]">
-                Macro Focus: {product.theMaterial.macroCaption}
-              </p>
+              {/* Prev / Next Controls over Main Image */}
+              {galleryList.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImageIndex((prev) => (prev - 1 + galleryList.length) % galleryList.length);
+                    }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#FAF7F2]/90 hover:bg-[#FAF7F2] text-[#23201D] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border border-[#E8E0D2] shadow-sm focus:outline-none focus:ring-0 focus-visible:outline-none"
+                    aria-label="Previous angle"
+                  >
+                    ←
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImageIndex((prev) => (prev + 1) % galleryList.length);
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#FAF7F2]/90 hover:bg-[#FAF7F2] text-[#23201D] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border border-[#E8E0D2] shadow-sm focus:outline-none focus:ring-0 focus-visible:outline-none"
+                    aria-label="Next angle"
+                  >
+                    →
+                  </button>
+                </>
+              )}
+
+              {/* Caption Overlay */}
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5 text-[#FAF7F2]">
+                <p className="text-[10px] tracking-[0.2em] uppercase font-medium opacity-80">
+                  {currentGalleryImage.label}
+                </p>
+                <p className="text-xs md:text-sm font-light mt-0.5 max-w-lg">
+                  {currentGalleryImage.caption}
+                </p>
+              </div>
+            </div>
+
+            {/* Thumbnail Selectors (Visible when multiple photos exist) */}
+            {galleryList.length > 1 && (
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5">
+                {galleryList.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`relative aspect-[4/5] overflow-hidden bg-[#ECE4D6] border-2 transition-all focus:outline-none focus:ring-0 focus-visible:outline-none ${
+                      activeImageIndex === idx
+                        ? 'border-[#23201D] opacity-100 shadow-xs'
+                        : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                    aria-label={`View angle ${idx + 1}`}
+                  >
+                    <Image
+                      src={img.url}
+                      alt={img.label}
+                      fill
+                      sizes="15vw"
+                      className="object-cover object-center"
+                    />
+                    <span className="absolute bottom-0.5 right-1 text-[8px] font-mono text-[#FAF7F2] bg-black/60 px-1 py-0.2">
+                      {idx + 1}
+                    </span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-        </div>
 
-        {/* SECTION 2: THE HAND */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-          <div className="md:col-span-6 md:order-2 relative aspect-[4/3] w-full overflow-hidden border border-[#D8C5A5] bg-[#E7DBCA]">
-            <Image
-              src={product.theHand.imageUrl}
-              alt={product.theHand.title}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover object-center filter contrast-105"
-            />
-          </div>
-          <div className="md:col-span-6 md:order-1 space-y-4 md:pr-6">
-            <span className="text-[10px] font-sans tracking-[0.35em] text-[#6E3027] uppercase font-bold">
-              {product.theHand.title}
-            </span>
-            <h3 className="font-serif text-2xl md:text-3xl text-[#241A14] font-light">
-              {product.theHand.subtitle}
-            </h3>
-            <p className="text-sm font-sans text-[#524035] font-light leading-relaxed">
-              {product.theHand.description}
-            </p>
-            {product.theHand.macroCaption && (
-              <p className="text-[11px] font-sans italic text-[#8C613C] pt-2 border-t border-[#D8C5A5]">
-                Guild Lineage: {product.theHand.macroCaption}
+          {/* Right Column: Handcrafted Details, Pricing & Purchase Actions */}
+          <div className="lg:col-span-6 flex flex-col space-y-7 lg:pl-6">
+            <div>
+              <div className="flex flex-wrap items-center gap-2.5 mb-2">
+                <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium">
+                  {product.category} · {product.origin}
+                </span>
+
+                {/* Real-time Inventory Status Badge */}
+                {!inStock ? (
+                  <span className="inline-flex items-center space-x-1.5 bg-[#8B3A2B]/10 border border-[#8B3A2B]/30 text-[#8B3A2B] text-[9px] uppercase tracking-wider px-2 py-0.5 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#8B3A2B]" />
+                    <span>OUT OF STOCK · MADE ON COMMISSION</span>
+                  </span>
+                ) : typeof product.stockQuantity === 'number' && product.stockQuantity <= 3 ? (
+                  <span className="inline-flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-800 text-[9px] uppercase tracking-wider px-2 py-0.5 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                    <span>ONLY {product.stockQuantity} PIECES REMAINING</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center space-x-1.5 text-[9px] uppercase tracking-wider text-[#4A6741] font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4A6741]" />
+                    <span>IN STOCK ({product.stockQuantity ?? 10} AVAILABLE)</span>
+                  </span>
+                )}
+              </div>
+
+              <h1 className="font-serif text-3xl sm:text-4xl text-[#23201D] font-light leading-tight">
+                {product.name}
+              </h1>
+
+              <div className="flex items-baseline gap-3 mt-3 font-serif">
+                {product.isOnSale && product.salePrice ? (
+                  <>
+                    <span className="text-2xl font-medium tracking-wide text-[#8B3A2B]">
+                      {product.salePrice}
+                    </span>
+                    <span className="text-base text-[#7A746C] line-through">
+                      {product.price}
+                    </span>
+                    <span className="bg-[#23201D] text-[#FAF7F2] text-[9px] font-sans uppercase tracking-[0.2em] px-2 py-0.5 font-medium">
+                      SALE
+                    </span>
+                  </>
+                ) : (
+                  <p className="text-xl font-medium tracking-wide text-[#23201D]">
+                    {product.price}
+                  </p>
+                )}
+              </div>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] mt-1.5 block">
+                Taxes included · Free white-glove shipping across India
+              </span>
+            </div>
+
+            {/* Editorial Description & Quote */}
+            <div className="border-t border-b border-[#E8E0D2] py-6 space-y-4">
+              <p className="font-serif italic text-base text-[#3A3027] leading-relaxed">
+                &ldquo;{product.editorialQuote}&rdquo;
               </p>
-            )}
-          </div>
-        </div>
-
-        {/* SECTION 3: THE DETAIL */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-          <div className="md:col-span-6 relative aspect-[4/3] w-full overflow-hidden border border-[#D8C5A5] bg-[#E7DBCA]">
-            <Image
-              src={product.theDetail.imageUrl}
-              alt={product.theDetail.title}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover object-center filter contrast-105"
-            />
-          </div>
-          <div className="md:col-span-6 space-y-4 md:pl-6">
-            <span className="text-[10px] font-sans tracking-[0.35em] text-[#6E3027] uppercase font-bold">
-              {product.theDetail.title}
-            </span>
-            <h3 className="font-serif text-2xl md:text-3xl text-[#241A14] font-light">
-              {product.theDetail.subtitle}
-            </h3>
-            <p className="text-sm font-sans text-[#524035] font-light leading-relaxed">
-              {product.theDetail.description}
-            </p>
-            {product.theDetail.macroCaption && (
-              <p className="text-[11px] font-sans italic text-[#8C613C] pt-2 border-t border-[#D8C5A5]">
-                Architectural Relief: {product.theDetail.macroCaption}
+              <p className="text-xs md:text-sm text-[#7A746C] font-light leading-relaxed">
+                {product.longDescription}
               </p>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* SECTION 4: THE STORY */}
-        <div className="p-8 md:p-12 bg-[#EDE4D3] border border-[#D8C5A5] space-y-5">
-          <div className="flex items-center space-x-3">
-            <Sparkles className="w-4 h-4 text-[#6E3027]" />
-            <span className="text-[10px] font-sans tracking-[0.35em] text-[#6E3027] uppercase font-bold">
-              {product.theStory.title} · {product.theStory.subtitle}
-            </span>
-          </div>
-          <p className="font-serif text-xl sm:text-2xl text-[#241A14] font-light leading-relaxed">
-            {product.theStory.description}
-          </p>
-          <div className="pt-4 border-t border-[#D8C5A5] flex flex-wrap gap-6 text-xs text-[#8C613C] tracking-[0.15em] uppercase font-semibold">
-            <span>CERTIFICATE: {product.provenance.certificateNumber}</span>
-            <span>·</span>
-            <span>QUARRY: {product.provenance.quarryLocation}</span>
-            <span>·</span>
-            <span>YEAR: {product.provenance.yearCrafted}</span>
-          </div>
-        </div>
+            {/* Material & Craft Technique Specs */}
+            <div className="space-y-4">
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#7A746C] font-medium block mb-1">
+                  NATURAL MATERIAL
+                </span>
+                <p className="text-xs md:text-sm font-medium text-[#23201D]">
+                  {product.material}
+                </p>
+              </div>
 
-        {/* Conservation & Care Instructions */}
-        <div className="p-6 bg-[#F2EBDD] border border-[#D8C5A5] space-y-3">
-          <span className="text-[10px] font-sans tracking-[0.25em] text-[#6E3027] uppercase font-bold block">
-            CONSERVATION & ARCHIVAL CARE
-          </span>
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-[#524035] font-light">
-            {product.conservationCare.map((care, i) => (
-              <li key={i} className="flex items-start space-x-2">
-                <span className="text-[#6E3027] mt-0.5 font-bold">•</span>
-                <span>{care}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#7A746C] font-medium block mb-1">
+                  CRAFT TECHNIQUE
+                </span>
+                <p className="text-xs md:text-sm font-medium text-[#23201D]">
+                  {product.craftTechnique}
+                </p>
+              </div>
+            </div>
 
-        {/* Acquisition Action Bar */}
-        <div className="pt-6 border-t border-[#D8C5A5] flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div>
-            <span className="text-[10px] uppercase font-sans tracking-[0.25em] text-[#8C613C] block font-semibold">
-              ACQUISITION VALUATION
-            </span>
-            <p className="font-serif text-3xl text-[#241A14] tracking-wider font-medium mt-0.5">
-              {product.priceFormatted}
-            </p>
-            <p className="text-[11px] text-[#524035] mt-0.5">
-              Includes bespoke foam-lined timber crate & provenance dossier
-            </p>
-          </div>
-
-          <button
-            onClick={() => onAddToCollection(product)}
-            data-cursor="pointer"
-            className={`w-full sm:w-auto px-8 py-4 text-xs font-sans tracking-[0.3em] uppercase font-semibold transition-all duration-300 flex items-center justify-center space-x-3 ${
-              isAlreadyInCollection
-                ? 'bg-[#EDE4D3] text-[#6E3027] border border-[#6E3027]'
-                : 'bg-[#241A14] text-[#F2EBDD] hover:bg-[#6E3027] shadow-[0_4px_16px_rgba(36,26,20,0.2)]'
-            }`}
-          >
-            {isAlreadyInCollection ? (
-              <>
-                <Check className="w-4 h-4" />
-                <span>IN YOUR CURATED INQUIRY</span>
-              </>
+            {/* Quantity Selector or Out of Stock Notice */}
+            {!inStock ? (
+              <div className="p-4 bg-[#F4EFE6] border border-[#E8E0D2] space-y-1">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#8B3A2B] font-semibold block">
+                  ATELIER COMMISSION STATUS
+                </span>
+                <p className="text-xs text-[#7A746C] leading-relaxed">
+                  This piece is currently sold out in our studio stock. Our master artisans can shape this object on a bespoke commission basis. Please enquire below with your timeline and requirements.
+                </p>
+              </div>
             ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>ADD TO COLLECTION</span>
-              </>
+              <div className="flex items-center space-x-6 pt-2">
+                <span className="text-xs uppercase tracking-[0.2em] text-[#7A746C]">QUANTITY</span>
+                <div className="flex items-center border border-[#D1C2AC]">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-8 h-8 flex items-center justify-center text-xs text-[#23201D] hover:bg-[#ECE4D6]"
+                    aria-label="Decrease quantity"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center text-xs font-medium tabular-nums">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (quantity < maxStock) {
+                        setQuantity(quantity + 1);
+                      }
+                    }}
+                    className={`w-8 h-8 flex items-center justify-center text-xs text-[#23201D] hover:bg-[#ECE4D6] ${
+                      quantity >= maxStock ? 'opacity-40 cursor-not-allowed' : ''
+                    }`}
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
+                {typeof product.stockQuantity === 'number' && (
+                  <span className="text-[10px] text-[#7A746C]">
+                    Max {product.stockQuantity} available
+                  </span>
+                )}
+              </div>
             )}
-          </button>
+
+            {/* Action Buttons: Add to Cart & Enquire Now */}
+            <div className="flex flex-col space-y-3 pt-2">
+              {!inStock ? (
+                <button
+                  disabled
+                  className="w-full bg-[#5C554E]/40 text-[#FAF7F2]/70 py-4 text-[11px] font-sans tracking-[0.24em] uppercase cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  <ShoppingBag className="w-4 h-4 stroke-[1.4] opacity-50" />
+                  <span>OUT OF STOCK · SOLD OUT</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleAdd}
+                  className="w-full bg-[#23201D] hover:bg-[#3A3027] text-[#FAF7F2] py-4 text-[11px] font-sans tracking-[0.24em] uppercase transition-all duration-300 flex items-center justify-center space-x-2"
+                >
+                  {addedSuccess ? (
+                    <>
+                      <Check className="w-4 h-4 text-[#FAF7F2]" />
+                      <span>ADDED TO CART</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="w-4 h-4 stroke-[1.4]" />
+                      <span>ADD TO CART · {product.price}</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              <button
+                onClick={() => onOpenEnquiry(product)}
+                className={`w-full py-3.5 text-[11px] font-sans tracking-[0.22em] uppercase transition-all duration-300 flex items-center justify-center space-x-2 ${
+                  !inStock
+                    ? 'bg-[#23201D] hover:bg-[#3A3027] text-[#FAF7F2]'
+                    : 'border border-[#23201D] text-[#23201D] hover:bg-[#23201D] hover:text-[#FAF7F2]'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4 stroke-[1.4]" />
+                <span>
+                  {!inStock
+                    ? 'ENQUIRE TO COMMISSION THIS PIECE'
+                    : 'ENQUIRE WITH ARTISAN ATELIER'}
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Guarantees */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-xs text-[#8C613C] font-medium">
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-[#6E3027]" />
-            <span>Authenticated by hereditary Guild Sthapatis</span>
+        {/* SECTION: THE MAKING (Visual Storytelling Section as Requested) */}
+        <div className="mt-24 pt-16 border-t border-[#E8E0D2]">
+          <div className="max-w-2xl mb-12">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block mb-2">
+              PROCESS & PROVENANCE
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#23201D] font-light">
+              The Making
+            </h2>
+            <p className="text-xs md:text-sm text-[#7A746C] mt-2 font-light">
+              Shaped through patience, ancestral heritage, and unhurried human touch.
+            </p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Truck className="w-4 h-4 text-[#6E3027]" />
-            <span>White-glove architectural crate placement worldwide</span>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left: Making Story Details */}
+            <div className="lg:col-span-6 space-y-6">
+              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                  MATERIAL SOURCING
+                </span>
+                <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
+                  {product.theMaking.materialSourcing}
+                </p>
+              </div>
+
+              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                  HAND TECHNIQUE
+                </span>
+                <p className="text-xs md:text-sm text-[#23201D] leading-relaxed">
+                  {product.theMaking.handTechnique}
+                </p>
+              </div>
+
+              <div className="p-6 bg-[#F4EFE6] border border-[#E8E0D2]">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-semibold block mb-1">
+                  CARE & PATINA
+                </span>
+                <ul className="text-xs text-[#7A746C] space-y-1 list-disc list-inside">
+                  {product.theMaking.careInstructions.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <p className="font-serif italic text-base text-[#3A3027] pl-2 border-l-2 border-[#D1C2AC]">
+                {product.theMaking.artisanNote}
+              </p>
+            </div>
+
+            {/* Right: Making Image */}
+            <div className="lg:col-span-6">
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ECE4D6]">
+                <Image
+                  src={product.theMaking.makingImage}
+                  alt={`Artisan crafting ${product.name}`}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover object-center"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION: Related Handcrafted Objects */}
+        <div className="mt-24 pt-16 border-t border-[#E8E0D2]">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block">
+                CURATED COMPANIONS
+              </span>
+              <h2 className="font-serif text-2xl md:text-3xl text-[#23201D] font-light mt-1">
+                Related Handcrafted Objects
+              </h2>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {relatedProducts.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => onSelectRelated(item)}
+                className="group cursor-pointer flex flex-col"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSelectRelated(item);
+                }}
+              >
+                <ProductCardImage
+                  product={item}
+                  aspectRatio="aspect-[4/3]"
+                  sizes="(max-width: 640px) 100vw, 33vw"
+                  className="mb-3"
+                />
+                <h4 className="font-serif text-base text-[#23201D] group-hover:text-[#AA9B87] transition-colors">
+                  {item.name}
+                </h4>
+                <span className="text-[11px] text-[#7A746C] mt-0.5">
+                  {item.material} · {item.origin}
+                </span>
+                <span className="text-xs text-[#23201D] font-medium mt-1">
+                  {item.price}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-    </dialog>
+    </div>
   );
 }

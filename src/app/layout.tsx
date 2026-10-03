@@ -1,26 +1,27 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "RUH STONE — Soul in Stone | Contemporary Rajasthani Craft House",
+  title: 'RUH STONE — Handcrafted Objects & Artisan Decor',
   description:
-    "Handcrafted stone objects, German silver pieces, and curated Indian artifacts shaped by master-masons of Rajasthan. Architectural luxury craft gallery.",
+    'Thoughtfully crafted objects shaped by tradition, material and human hands. Contemporary Indian craftsmanship, hand-carved stone vessels, wheel-thrown ceramics, beaten kansa bronze, and sculptural decor.',
   keywords: [
-    "RUH STONE",
-    "Handcrafted stone",
-    "Rajasthan architecture",
-    "Sandstone craft",
-    "Haveli artifacts",
-    "German silver",
-    "Silawat masons",
-    "Contemporary craft gallery",
+    'RUH STONE',
+    'Handcrafted Objects',
+    'Artisan Decor',
+    'Indian Craftsmanship',
+    'Handmade Ceramics',
+    'Carved Stone Vessels',
+    'Sculptural Objects',
+    'Beaten Brass',
+    'Quiet Luxury Decor',
   ],
   openGraph: {
-    title: "RUH STONE — Soul in Stone",
+    title: 'RUH STONE — The Beauty of the Handmade',
     description:
-      "A contemporary Rajasthan haveli transformed into a luxury art gallery. Handcrafted stone objects, German silver pieces, and curated Indian artifacts.",
-    type: "website",
-    locale: "en_US",
+      'Thoughtfully crafted objects shaped by tradition, material and human hands. Collectible artisan decor.',
+    type: 'website',
+    locale: 'en_IN',
   },
 };
 
@@ -31,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="bg-[#F2EBDD] text-[#241A14] font-sans antialiased selection:bg-[#B98B62]/30 selection:text-[#241A14] overflow-x-hidden min-h-screen">
+      <body className="bg-[#FAF7F2] text-[#23201D] font-sans antialiased selection:bg-[#D1C2AC]/50 selection:text-[#23201D] min-h-screen">
         {children}
       </body>
     </html>

@@ -1,223 +1,130 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowRight, Check } from 'lucide-react';
+import React from 'react';
+import Link from 'next/link';
 
-export default function Footer() {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+interface FooterProps {
+  onOpenContact?: () => void;
+}
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-    }
-  };
-
+export default function Footer({ onOpenContact }: FooterProps) {
   return (
-    <footer className="relative bg-[#241A14] text-[#F2EBDD] border-t border-[#4F1F19] overflow-hidden">
-      {/* Subtle Terracotta/Red Radial Glow */}
-      <div className="absolute inset-0 bg-radial from-[#6E3027]/25 via-transparent to-transparent pointer-events-none" />
+    <footer className="bg-[#FAF7F2] text-[#23201D] border-t border-[#E8E0D2] pt-20 pb-16">
+      <div className="max-w-[1400px] mx-auto px-6 md:px-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-16 pb-16">
+          {/* Left Column: RUH STONE Logo & Craft Tagline (Ventura inspired) */}
+          <div className="md:col-span-6 flex flex-col justify-between space-y-6">
+            <div>
+              {/* Brand Wordmark (Ventura editorial style - no logo image) */}
+              <Link href="/" className="inline-block group focus:outline-none" aria-label="RUH STONE">
+                <span className="font-serif text-2xl tracking-[0.26em] text-[#23201D] font-light leading-none group-hover:text-[#AA9B87] transition-colors">
+                  RUH STONE
+                </span>
+                <span className="text-[9px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block mt-2">
+                  SOUL IN STONE · HANDCRAFTS
+                </span>
+              </Link>
 
-      {/* Rajasthani Architectural Carved Cornice Border */}
-      <div className="relative w-full h-3 border-b border-[#382A22] bg-[#1A120D] flex items-center justify-center overflow-hidden">
-        <div className="w-full flex space-x-4 opacity-50">
-          {Array.from({ length: 40 }).map((_, i) => (
-            <div key={i} className="flex items-center space-x-1 flex-shrink-0">
-              <span className="w-1.5 h-1.5 rotate-45 border border-[#B98B62]" />
-              <span className="w-4 h-[1px] bg-[#B98B62]" />
+              <p className="text-xs text-[#7A746C] font-light max-w-sm mt-5 leading-relaxed">
+                Thoughtfully crafted objects shaped by tradition, material and human hands. Contemporary Indian craft, carved stone vessels, wheel-thrown ceramics, and quiet luxury decor.
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="relative max-w-7xl mx-auto px-6 md:px-12 pt-20 pb-16">
-        {/* Brand Plaque Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] uppercase font-sans tracking-[0.4em] text-[#D8C5A5] font-semibold">
-            ESTABLISHED IN THE KINGDOM OF MARWAR
-          </span>
-          <h2 className="font-serif text-5xl sm:text-6xl md:text-7xl tracking-[0.14em] text-[#F2EBDD] font-light">
-            RUH STONE
-          </h2>
-          <p className="font-serif italic text-2xl sm:text-3xl text-[#D8C5A5]">
-            Soul in Stone.
-          </p>
-        </div>
-
-        {/* Newsletter Subscription Strip */}
-        <div className="max-w-2xl mx-auto mb-20 p-8 bg-[#2D211A] border border-[#4F1F19] rounded-sm">
-          <div className="text-center mb-6">
-            <span className="text-[10px] uppercase font-sans tracking-[0.3em] text-[#D8C5A5] block mb-1 font-semibold">
-              THE ARCHIVAL GAZETTE
-            </span>
-            <p className="font-serif italic text-base text-[#E7DBCA]">
-              Private monograph releases, private salon invitations, and newly cataloged stone acquisitions.
-            </p>
-          </div>
-
-          {subscribed ? (
-            <div className="flex items-center justify-center space-x-2 py-3 text-xs font-sans tracking-[0.2em] uppercase text-[#D8C5A5]">
-              <Check className="w-4 h-4" />
-              <span>You have been registered into the private archive.</span>
-            </div>
-          ) : (
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter collector email address"
-                className="flex-1 px-4 py-3 bg-[#1A120D] border border-[#4F1F19] text-xs text-[#F2EBDD] placeholder-[#8C613C] focus:border-[#D8C5A5] focus:outline-none"
-              />
-              <button
-                type="submit"
-                data-cursor="pointer"
-                className="px-6 py-3 bg-[#6E3027] hover:bg-[#9B5540] text-[#F2EBDD] font-sans text-xs uppercase tracking-[0.25em] font-medium transition-all duration-300 flex items-center justify-center space-x-2"
+            {/* Social Icons (Instagram, Pinterest as requested) */}
+            <div className="flex items-center space-x-5 text-[#7A746C]">
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+                className="hover:text-[#23201D] transition-colors"
               >
-                <span>INVITE ME</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <svg className="w-4 h-4 fill-none stroke-current stroke-[1.5]" viewBox="0 0 24 24">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+              </a>
+              <a
+                href="https://pinterest.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Pinterest"
+                className="hover:text-[#23201D] transition-colors"
+              >
+                <svg
+                  className="w-4 h-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345-.09.375-.291 1.199-.33 1.366-.053.225-.177.271-.409.165-1.528-.711-2.483-2.946-2.483-4.743 0-3.864 2.809-7.413 8.096-7.413 4.251 0 7.556 3.03 7.556 7.08 0 4.224-2.663 7.623-6.36 7.623-1.242 0-2.41-.646-2.808-1.41l-.765 2.916c-.276 1.064-1.026 2.398-1.527 3.212C9.722 23.856 10.838 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z" />
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          {/* Right Column: Clean Link Columns (Exact User Spec) */}
+          <div className="md:col-span-6 grid grid-cols-2 gap-8 md:pl-16">
+            <div className="flex flex-col space-y-3.5 text-xs font-sans tracking-[0.16em]">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#7A746C] font-semibold mb-1">
+                COLLECTIONS
+              </span>
+              <a href="#shop" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
+                Shop
+              </a>
+              <a href="#collections" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
+                Collections
+              </a>
+              <a href="#about" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
+                About
+              </a>
+            </div>
+
+            <div className="flex flex-col space-y-3.5 text-xs font-sans tracking-[0.16em]">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#7A746C] font-semibold mb-1">
+                CLIENT SERVICES
+              </span>
+              <button
+                onClick={onOpenContact}
+                className="text-left text-[#23201D] hover:text-[#AA9B87] transition-colors focus:outline-none"
+              >
+                Contact
               </button>
-            </form>
-          )}
-        </div>
-
-        {/* 4-Column Directory Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-16 border-b border-[#382A22]">
-          {/* Col 1: Heritage Ateliers */}
-          <div className="space-y-4">
-            <span className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#D8C5A5] font-semibold block">
-              HERITAGE ATELIERS
-            </span>
-            <div className="space-y-3 text-xs font-sans text-[#E7DBCA] font-light leading-relaxed">
-              <div>
-                <strong className="text-[#F2EBDD] block text-xs tracking-wider">JAIPUR PRIVATE SALON</strong>
-                <p>Haveli Kothi Anand, C-Scheme</p>
-                <p>Jaipur, Rajasthan 302001</p>
-                <p className="text-[#B98B62] mt-0.5">By private curatorial appointment</p>
-              </div>
-              <div className="pt-2">
-                <strong className="text-[#F2EBDD] block text-xs tracking-wider">JODHPUR QUARRY WORKSHOPS</strong>
-                <p>Mandore Heritage Silawat Quarter</p>
-                <p>Jodhpur, Marwar 342007</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Col 2: The Archive */}
-          <div className="space-y-4">
-            <span className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#D8C5A5] font-semibold block">
-              THE COLLECTION
-            </span>
-            <ul className="space-y-2 text-xs font-sans tracking-[0.15em] uppercase text-[#B98B62]">
-              <li>
-                <a href="#collection" className="hover:text-[#F2EBDD] transition-colors">
-                  Monolithic Stone Urns
-                </a>
-              </li>
-              <li>
-                <a href="#collection" className="hover:text-[#F2EBDD] transition-colors">
-                  German Silver Repoussé
-                </a>
-              </li>
-              <li>
-                <a href="#collection" className="hover:text-[#F2EBDD] transition-colors">
-                  Haveli Jharokha Bas-Reliefs
-                </a>
-              </li>
-              <li>
-                <a href="#collection" className="hover:text-[#F2EBDD] transition-colors">
-                  Makrana Marble Sculptural Basins
-                </a>
-              </li>
-              <li>
-                <a href="#collection" className="hover:text-[#F2EBDD] transition-colors">
-                  Archival Temple Capitals
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 3: Monograph & Journal */}
-          <div className="space-y-4">
-            <span className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#D8C5A5] font-semibold block">
-              PUBLICATIONS & ESSAYS
-            </span>
-            <ul className="space-y-2 text-xs font-sans tracking-[0.15em] uppercase text-[#B98B62]">
-              <li>
-                <a href="#journal" className="hover:text-[#F2EBDD] transition-colors">
-                  The Art of Stone Carving
-                </a>
-              </li>
-              <li>
-                <a href="#journal" className="hover:text-[#F2EBDD] transition-colors">
-                  The Craftsmen of Rajasthan
-                </a>
-              </li>
-              <li>
-                <a href="#journal" className="hover:text-[#F2EBDD] transition-colors">
-                  Why Handmade Objects Matter
-                </a>
-              </li>
-              <li>
-                <a href="#journal" className="hover:text-[#F2EBDD] transition-colors">
-                  From Desert to Object
-                </a>
-              </li>
-              <li>
-                <a href="#craft" className="hover:text-[#F2EBDD] transition-colors">
-                  The Shilpa Shastra Canons
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 4: Curatorial Contact & Social */}
-          <div className="space-y-4">
-            <span className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#D8C5A5] font-semibold block">
-              CURATORIAL INQUIRIES
-            </span>
-            <div className="space-y-3 text-xs font-sans text-[#E7DBCA] font-light">
-              <p>
-                Private commissions for architectural installations, estates, and museum collections:
-              </p>
-              <p className="font-serif text-base text-[#D8C5A5]">
-                curator@ruhstone.com
-              </p>
-              <p className="text-xs text-[#F2EBDD]">
-                +91 (0) 141 238 9012
-              </p>
-              <div className="pt-2 flex items-center space-x-4 text-xs font-sans uppercase tracking-[0.2em] text-[#D8C5A5]">
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-[#F2EBDD] transition-colors"
-                >
-                  INSTAGRAM
-                </a>
-                <span>·</span>
-                <a
-                  href="#story"
-                  className="hover:text-[#F2EBDD] transition-colors"
-                >
-                  ARCHIVE REGISTRY
-                </a>
-              </div>
+              <a
+                href="#shipping"
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert("RUH STONE offers complimentary insured white-glove shipping on all handmade orders across India, with international express dispatch to 45 countries.");
+                }}
+                className="text-[#23201D] hover:text-[#AA9B87] transition-colors"
+              >
+                Shipping
+              </a>
+              <a
+                href="#returns"
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert("We accept complimentary returns within 14 days of delivery for all non-custom handmade objects in their original packaging.");
+                }}
+                className="text-[#23201D] hover:text-[#AA9B87] transition-colors"
+              >
+                Returns
+              </a>
+              <a href="#privacy" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
+                Privacy
+              </a>
             </div>
           </div>
         </div>
 
-        {/* Bottom Credits & Copyright */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] font-sans text-[#8C613C] tracking-[0.18em] uppercase gap-4 font-medium">
-          <p>© {new Date().getFullYear()} RUH STONE. ALL ARCHIVAL RIGHTS RESERVED.</p>
-          <div className="flex items-center space-x-6 text-[10px]">
-            <span>AUTHENTICITY GUARANTEED</span>
+        {/* Bottom Legal Bar */}
+        <div className="pt-10 border-t border-[#E8E0D2] flex flex-col sm:flex-row items-center justify-between text-[11px] text-[#7A746C] tracking-wide">
+          <span>© {new Date().getFullYear()} RUH STONE. All rights reserved.</span>
+          <div className="flex items-center space-x-6 mt-4 sm:mt-0">
+            <span className="text-[#7A746C]">Curated Indian Craftsmanship</span>
             <span>·</span>
-            <span>WHITE-GLOVE WORLDWIDE CRATING</span>
-            <span>·</span>
-            <span>RAJASTHAN, INDIA</span>
+            <Link href="/admin" className="text-[10px] text-[#7A746C]/70 hover:text-[#23201D] tracking-widest uppercase">
+              Atelier Portal
+            </Link>
           </div>
         </div>
       </div>

@@ -1,115 +1,93 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
-  --font-cinzel: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+  --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* The Authentic Rajasthan Craft House Palette */
-  --color-sandstone: #B98B62;
-  --color-sandstone-light: #C9A480;
-  --color-sandstone-dark: #8C613C;
-  --color-limestone: #D8C5A5;
-  --color-limestone-light: #E7DBCA;
-  --color-ivory: #F2EBDD;
-  --color-ivory-light: #F9F6F0;
-  --color-terracotta: #9B5540;
-  --color-terracotta-light: #B46A54;
-  --color-rajasthani-red: #6E3027;
-  --color-rajasthani-red-dark: #4F1F19;
-  --color-indigo-muted: #283746;
-  --color-walnut: #241A14;
-  --color-walnut-soft: #382A22;
-  --color-walnut-light: #524035;
-  --color-brass: #9B8055;
-  --color-brass-light: #B59B6F;
+  /* RUH STONE Architectural Natural Materials Palette */
+  --color-stone-ivory: #FAF7F2;
+  --color-stone-ivory-warm: #F4EFE6;
+  --color-stone-card: #ECE4D6;
+  --color-stone-beige: #DFD4C2;
+  --color-stone-sand: #D1C2AC;
+  --color-stone-taupe: #AA9B87;
+  --color-stone-grey: #7A746C;
+  --color-stone-charcoal: #23201D;
+  --color-stone-brown: #3A3027;
+  --color-stone-border: #E8E0D2;
+  --color-stone-border-subtle: #EFE8DC;
 }
 
-/* Base Document Styling: Warm, Tactile, Architectural */
+/* Base Document Styling: Warm Ivory, Architectural, Quiet Luxury */
 html {
-  background-color: #F2EBDD;
-  color: #241A14;
+  background-color: #FAF7F2;
+  color: #23201D;
   scroll-behavior: smooth;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 body {
-  background-color: #F2EBDD;
-  color: #241A14;
+  background-color: #FAF7F2;
+  color: #23201D;
   overflow-x: hidden;
   font-family: var(--font-sans);
 }
 
-/* Architectural Luxury Scrollbar */
+/* Restrained Minimal Scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #E8DFC8;
+  background: #FAF7F2;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #B98B62;
-  border-radius: 2px;
+  background: #D5C7B3;
+  border-radius: 1px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9B5540;
+  background: #AA9B87;
 }
 
-/* Subtle Lime Plaster (Chuna) & Sandstone Textures */
-.plaster-texture {
-  background-color: #F2EBDD;
-  background-image: radial-gradient(circle at 10% 20%, rgba(185, 139, 98, 0.05) 0%, transparent 60%),
-    radial-gradient(circle at 90% 80%, rgba(155, 85, 64, 0.04) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+/* Subtle architectural tactile texture overlay */
+.stone-texture-subtle {
+  background-color: #FAF7F2;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
 }
 
-.sandstone-wash {
-  background-color: #D8C5A5;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='sand'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23sand)' opacity='0.045'/%3E%3C/svg%3E");
+/* Smooth Ventura-like hover scale */
+.hover-scale-102 {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.wasli-paper {
-  background-color: #EDE4D3;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='wasli'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wasli)' opacity='0.03'/%3E%3C/svg%3E");
+.hover-scale-102:hover {
+  transform: scale(1.02);
 }
 
-/* Jaali Geometries in Warm Earth Tones */
-.bg-jaali-warm {
-  background-image: repeating-linear-gradient(45deg, rgba(155, 85, 64, 0.05) 0, rgba(155, 85, 64, 0.05) 1px, transparent 0, transparent 40px),
-                    repeating-linear-gradient(-45deg, rgba(155, 85, 64, 0.05) 0, rgba(155, 85, 64, 0.05) 1px, transparent 0, transparent 40px);
-  background-size: 40px 40px;
+/* Understated text link underline */
+.link-underline {
+  position: relative;
+  display: inline-block;
 }
 
-.bg-jaali-subtle {
-  background-image: repeating-linear-gradient(45deg, rgba(185, 139, 98, 0.06) 0, rgba(185, 139, 98, 0.06) 1px, transparent 0, transparent 24px),
-                    repeating-linear-gradient(-45deg, rgba(185, 139, 98, 0.06) 0, rgba(185, 139, 98, 0.06) 1px, transparent 0, transparent 24px);
-  background-size: 24px 24px;
+.link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: currentColor;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Architectural Jharokha Arch Silhouette */
-.jharokha-frame {
-  border-top-left-radius: 120px;
-  border-top-right-radius: 120px;
+.link-underline:hover::after {
+  width: 100%;
 }
 
-/* Dialog Backdrop Blur */
-dialog::backdrop {
-  background-color: rgba(36, 26, 20, 0.65);
-  backdrop-filter: blur(8px);
-}
-
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}

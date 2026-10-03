@@ -1,131 +1,188 @@
 'use client';
 
-import React, { useState } from 'react';
-import SmoothScroll from '@/components/SmoothScroll';
-import DustParticles from '@/components/DustParticles';
-import CustomCursor from '@/components/CustomCursor';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
-import AboutRuh from '@/components/AboutRuh';
-import CollectionIntro from '@/components/CollectionIntro';
-import JharokhaFeature from '@/components/JharokhaFeature';
-import RajasthanMap from '@/components/RajasthanMap';
-import CraftProcess from '@/components/CraftProcess';
-import MaterialExplorer from '@/components/MaterialExplorer';
-import JournalSection from '@/components/JournalSection';
+import FeaturedEditorial from '@/components/FeaturedEditorial';
+import EditorialTiles from '@/components/EditorialTiles';
+import ShopSection from '@/components/ShopSection';
+import CraftCollections from '@/components/CraftCollections';
+import StorySection from '@/components/StorySection';
+import LifestyleSection from '@/components/LifestyleSection';
+import NewsletterBanner from '@/components/NewsletterBanner';
 import Footer from '@/components/Footer';
 import ProductDetailModal from '@/components/ProductDetailModal';
-import AcquisitionDrawer from '@/components/AcquisitionDrawer';
-import { CraftObject, AcquisitionItem } from '@/types';
-import { CRAFT_OBJECTS } from '@/data/craftObjects';
+import CartDrawer from '@/components/CartDrawer';
+import ContactModal from '@/components/ContactModal';
+import { CraftProduct, CartItem, CraftCategory, isProductInStock } from '@/types';
+import { CRAFT_PRODUCTS } from '@/data/craftData';
 
 export default function Home() {
-  const [selectedProduct, setSelectedProduct] = useState<CraftObject | null>(null);
-  const [acquisitionItems, setAcquisitionItems] = useState<AcquisitionItem[]>([
-    { product: CRAFT_OBJECTS[0], quantity: 1 } // Pre-load Jodhpur Monolith Urn as signature curatorial sample
-  ]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<CraftProduct | null>(null);
+  const [enquiryProduct, setEnquiryProduct] = useState<CraftProduct | null>(null);
+  const [products, setProducts] = useState<CraftProduct[]>(CRAFT_PRODUCTS);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<CraftCategory>('All');
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
-  const handleAddToCollection = (product: CraftObject) => {
-    setAcquisitionItems((prev) => {
-      const exists = prev.find((item) => item.product.id === product.id);
-      if (exists) {
-        return prev;
+  useEffect(() => {
+    fetch('/api/products')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAddToCart = (product: CraftProduct, quantity: number = 1) => {
+    if (!isProductInStock(product)) {
+      return;
+    }
+    const maxStock = typeof product.stockQuantity === 'number' ? product.stockQuantity : 99;
+    setCartItems((prev) => {
+      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        const nextQty = Math.min(maxStock, updated[existingIndex].quantity + quantity);
+        updated[existingIndex].quantity = nextQty;
+        return updated;
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, quantity: Math.min(maxStock, quantity) }];
     });
-    // Open drawer after a brief moment so user sees it in their dossier
+
+    // Gentle automated feedback: open the cart drawer after a moment
     setTimeout(() => {
-      setIsDrawerOpen(true);
+      setIsCartOpen(true);
     }, 350);
   };
 
-  const handleRemoveItem = (id: string) => {
-    setAcquisitionItems((prev) => prev.filter((item) => item.product.id !== id));
+  const handleQuickAddToCart = (product: CraftProduct) => {
+    handleAddToCart(product, 1);
   };
 
-  const handleClearItems = () => {
-    setAcquisitionItems([]);
+  const handleRemoveCartItem = (index: number) => {
+    setCartItems((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleSelectArtifactByName = (name: string) => {
-    const found = CRAFT_OBJECTS.find(
-      (obj) => obj.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(obj.name.toLowerCase())
-    );
-    if (found) {
-      setSelectedProduct(found);
-    }
+  const handleUpdateQuantity = (index: number, quantity: number) => {
+    setCartItems((prev) => {
+      const updated = [...prev];
+      if (updated[index]) {
+        updated[index].quantity = quantity;
+      }
+      return updated;
+    });
   };
 
-  const isCurrentInCollection = selectedProduct
-    ? acquisitionItems.some((item) => item.product.id === selectedProduct.id)
-    : false;
+  const handleClearCart = () => {
+    setCartItems([]);
+  };
+
+  const handleOpenEnquiry = (product: CraftProduct) => {
+    setEnquiryProduct(product);
+    setIsContactOpen(true);
+  };
 
   return (
-    <SmoothScroll>
-      <div className="relative min-h-screen bg-[#F2EBDD] text-[#241A14] overflow-x-hidden selection:bg-[#B98B62]/30 selection:text-[#241A14] plaster-texture">
-        {/* Ambient Plaster Grain Overlay */}
-        <div className="grain-overlay fixed inset-0 pointer-events-none z-30 opacity-30" />
+    <div className="relative min-h-screen bg-[#FAF7F2] text-[#23201D] stone-texture-subtle overflow-x-hidden selection:bg-[#D1C2AC]/50 selection:text-[#23201D]">
+      {/* 1. NAVIGATION: Clean Ventura-inspired sticky navigation for Handcrafted Objects */}
+      <Navbar
+        cartCount={cartItems.reduce((acc, i) => acc + i.quantity, 0)}
+        onOpenCart={() => setIsCartOpen(true)}
+        onOpenContact={() => {
+          setEnquiryProduct(null);
+          setIsContactOpen(true);
+        }}
+      />
 
-        {/* Ambient Floating Stone Dust Particles */}
-        <DustParticles />
-
-        {/* Precision Architectural Custom Cursor */}
-        <CustomCursor />
-
-        {/* Fixed Minimal Architectural Navbar */}
-        <Navbar
-          acquisitionCount={acquisitionItems.length}
-          onOpenAcquisitionDrawer={() => setIsDrawerOpen(true)}
+      <main>
+        {/* 2. HERO SECTION: Curated handcrafted objects in warm minimalist limewash interior */}
+        <Hero
+          onExploreClick={() => {
+            const el = document.getElementById('featured');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
         />
 
-        {/* Main Content Sections */}
-        <main>
-          {/* Section 1: Hero Experience with Emergence */}
-          <Hero />
-
-          {/* Section 2: About RUH ("WE DON'T MAKE OBJECTS. WE PRESERVE STORIES.") */}
-          <AboutRuh />
-
-          {/* Section 3: Collection Introduction & Explorer ("OBJECTS WITH A SOUL.") */}
-          <CollectionIntro onSelectProduct={setSelectedProduct} />
-
-          {/* Section 4: Architectural Jharokha Masterpiece Feature */}
-          <JharokhaFeature onSelectProduct={setSelectedProduct} />
-
-          {/* Section 5: Hand-Drawn Antique Editorial Map of Rajasthan */}
-          <RajasthanMap onSelectArtifact={handleSelectArtifactByName} />
-
-          {/* Section 6: Full-Screen Craftsmanship Journey (6 Stages of Metamorphosis) */}
-          <CraftProcess />
-
-          {/* Section 7: Tactile Material Exploration (Stone, Silver, Artifacts) */}
-          <MaterialExplorer />
-
-          {/* Section 8: The RUH Archival Journal / Monograph Publication */}
-          <JournalSection />
-        </main>
-
-        {/* Section 9: Luxury Haveli Footer */}
-        <Footer />
-
-        {/* Full-Screen Product Exhibition Modal */}
-        <ProductDetailModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-          onAddToCollection={handleAddToCollection}
-          isAlreadyInCollection={isCurrentInCollection}
+        {/* 3. FEATURED COLLECTION: "CRAFTED WITH INTENTION" with 3-4 handcrafted objects */}
+        <FeaturedEditorial
+          products={products}
+          onSelectProduct={setSelectedProduct}
         />
 
-        {/* Curated Collection Acquisition Drawer */}
-        <AcquisitionDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          items={acquisitionItems}
-          onRemoveItem={handleRemoveItem}
-          onClearItems={handleClearItems}
+        {/* 4. TWO LARGE EDITORIAL TILES: "THE HANDCRAFTED COLLECTION" & "CRAFT & HERITAGE" */}
+        <EditorialTiles
+          onTile1Click={() => {
+            const el = document.getElementById('shop');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onTile2Click={() => {
+            const el = document.getElementById('about');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
         />
-      </div>
-    </SmoothScroll>
+
+        {/* 5. PRODUCT GRID: 3-column handcrafted objects grid with realistic craft categories & INR pricing */}
+        <ShopSection
+          products={products}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          onSelectProduct={setSelectedProduct}
+          onQuickAddToCart={handleQuickAddToCart}
+        />
+
+        {/* 6. CRAFT COLLECTIONS: Categories (GERMAN SILVER, MARBLE, FIBRE) */}
+        <CraftCollections products={products} onSelectCategory={setSelectedCategory} />
+
+        {/* 7. ARTISAN STORY: "EVERY PIECE HAS A HAND BEHIND IT." with close-up artisan craftsmanship */}
+        <StorySection />
+
+        {/* 8. EDITORIAL / LIFESTYLE SECTION: "MADE TO BELONG." refined warm Indian-inspired home */}
+        <LifestyleSection />
+
+        {/* 10. NEWSLETTER / FINAL CTA: "BRING CRAFT HOME." with handcrafted still life */}
+        <NewsletterBanner />
+      </main>
+
+      {/* 11. FOOTER: Minimal and spacious Ventura-inspired footer with exact requested links */}
+      <Footer
+        onOpenContact={() => {
+          setEnquiryProduct(null);
+          setIsContactOpen(true);
+        }}
+      />
+
+      {/* PRODUCT DETAIL EXPERIENCE: Modal with large photo gallery, specs, "The Making" visual story & related objects */}
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={handleAddToCart}
+        onOpenEnquiry={handleOpenEnquiry}
+        onSelectRelated={(product) => setSelectedProduct(product)}
+      />
+
+      {/* Interactive Cart Drawer */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+        onRemoveItem={handleRemoveCartItem}
+        onUpdateQuantity={handleUpdateQuantity}
+        onClearCart={handleClearCart}
+      />
+
+      {/* Interactive Artisan Enquiry & Commission Modal */}
+      <ContactModal
+        isOpen={isContactOpen}
+        onClose={() => {
+          setIsContactOpen(false);
+          setEnquiryProduct(null);
+        }}
+        initialProduct={enquiryProduct}
+      />
+    </div>
   );
 }
