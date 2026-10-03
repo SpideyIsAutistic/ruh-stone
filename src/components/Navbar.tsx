@@ -71,7 +71,7 @@ export default function Navbar({ cartCount, onOpenCart, onOpenContact }: NavbarP
             {/* Subtle Divider */}
             <div className="h-4 w-[1px] bg-[#D1C2AC]/70" />
 
-            {/* Social Icons (Instagram, Pinterest as requested) */}
+            {/* Social Icons (Instagram) */}
             <div className="flex items-center space-x-4 text-[#7A746C]">
               <a
                 href="https://instagram.com/ruhstonee"
@@ -84,20 +84,6 @@ export default function Navbar({ cartCount, onOpenCart, onOpenContact }: NavbarP
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                </svg>
-              </a>
-              <a
-                href="https://pinterest.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Pinterest"
-                className="hover:text-[#23201D] transition-colors"
-              >
-                <svg
-                  className="w-3.5 h-3.5 fill-current"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345-.09.375-.291 1.199-.33 1.366-.053.225-.177.271-.409.165-1.528-.711-2.483-2.946-2.483-4.743 0-3.864 2.809-7.413 8.096-7.413 4.251 0 7.556 3.03 7.556 7.08 0 4.224-2.663 7.623-6.36 7.623-1.242 0-2.41-.646-2.808-1.41l-.765 2.916c-.276 1.064-1.026 2.398-1.527 3.212C9.722 23.856 10.838 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z" />
                 </svg>
               </a>
             </div>
@@ -169,14 +155,6 @@ export default function Navbar({ cartCount, onOpenCart, onOpenContact }: NavbarP
                 className="text-xs uppercase tracking-[0.2em] hover:text-[#23201D]"
               >
                 Instagram (@ruhstonee)
-              </a>
-              <a
-                href="https://pinterest.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs uppercase tracking-[0.2em] hover:text-[#23201D]"
-              >
-                Pinterest
               </a>
             </div>
             <p className="text-[11px] text-[#7A746C] tracking-wide">
