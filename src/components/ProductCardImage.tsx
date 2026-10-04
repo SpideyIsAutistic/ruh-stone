@@ -22,7 +22,8 @@ export default function ProductCardImage({
   children,
 }: ProductCardImageProps) {
   const images = getProductImages(product);
-  const fallbackCover = '/images/atelier-carving.jpg';
+  const fallbackCover =
+    "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect width='100%25' height='100%25' fill='%23ECE5D8'/%3E%3C/svg%3E";
   const primaryImage = images[0] || product.heroImage || fallbackCover;
   const hoverImage = images.length > 1 && images[1] && images[1] !== primaryImage ? images[1] : null;
 

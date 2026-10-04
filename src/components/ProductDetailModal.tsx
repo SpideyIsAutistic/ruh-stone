@@ -6,7 +6,6 @@ import Link from 'next/link';
 import ProductCardImage from './ProductCardImage';
 import { X, Check, ShoppingBag, MessageSquare, Sparkles } from 'lucide-react';
 import { CraftProduct, isProductInStock } from '@/types';
-import { CRAFT_PRODUCTS } from '@/data/craftData';
 
 interface ProductDetailModalProps {
   product: CraftProduct | null;
@@ -79,7 +78,7 @@ export default function ProductDetailModal({
     }
   };
 
-  const activeCatalog = allProducts && allProducts.length > 0 ? allProducts : CRAFT_PRODUCTS;
+  const activeCatalog = allProducts || [];
 
   // Recommended products: products in same category first, followed by others, excluding current product
   const recommendedProducts = React.useMemo(() => {
@@ -92,7 +91,7 @@ export default function ProductDetailModal({
 
   const topPairing = recommendedProducts[0] || null;
 
-  const fallbackCover = product.heroImage || (product.images && product.images[0]) || '/images/atelier-carving.jpg';
+  const fallbackCover = product?.heroImage || (product?.images && product.images[0]) || '';
   const galleryList = (product.galleryImages && product.galleryImages.length > 0)
     ? product.galleryImages
     : (product.images && product.images.length > 0)

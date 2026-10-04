@@ -31,7 +31,6 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { CraftProduct, CraftCategory, isProductInStock, Order, OrderStatus } from '@/types';
-import { CRAFT_PRODUCTS } from '@/data/craftData';
 import ProductCardImage from '@/components/ProductCardImage';
 
 export default function AdminPage() {
@@ -39,7 +38,7 @@ export default function AdminPage() {
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
 
-  const [products, setProducts] = useState<CraftProduct[]>(CRAFT_PRODUCTS);
+  const [products, setProducts] = useState<CraftProduct[]>([]);
   const [activeTab, setActiveTab] = useState<'list' | 'create' | 'orders'>('list');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -106,8 +105,8 @@ export default function AdminPage() {
         setProducts(data);
       }
     } catch {
-      // Fallback to local default list
-      setProducts(CRAFT_PRODUCTS);
+      // Failed to fetch products
+      setProducts([]);
     }
   };
 
@@ -396,12 +395,11 @@ export default function AdminPage() {
     const isOut = Boolean(formData.isOutOfStock || stockQty <= 0);
 
     // Organize photos: Cover photo first, followed by other angles
-    const fallbackImage =
-      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=1600&auto=format&fit=crop';
+    const fallbackImage = imagePreviews[0] || '';
     const effectiveCover =
       imagePreviews[selectedCoverIndex] || imagePreviews[0] || fallbackImage;
     const remainingPhotos = imagePreviews.filter((_, idx) => idx !== selectedCoverIndex);
-    const allOrderedPhotos = [effectiveCover, ...remainingPhotos];
+    const allOrderedPhotos = [effectiveCover, ...remainingPhotos].filter(Boolean);
 
     const galleryImages = allOrderedPhotos.map((url, idx) => ({
       url,
@@ -447,8 +445,7 @@ export default function AdminPage() {
           'Avoid chemical cleansers or standing water.',
         ],
         artisanNote: formData.artisanNote,
-        makingImage:
-          'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1600&auto=format&fit=crop',
+        makingImage: '/images/atelier-carving.jpg',
       },
     };
 

@@ -62,7 +62,7 @@ export default function StorySection() {
           <div className="lg:col-span-6">
             <div className="relative aspect-[4/5] sm:aspect-[1/1] lg:aspect-[4/5] w-full overflow-hidden bg-[#ECE4D6]">
               <Image
-                src="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1600&auto=format&fit=crop"
+                src="/images/atelier-carving.jpg"
                 alt="Close-up of artisan hands carving a handcrafted object with chisel"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"

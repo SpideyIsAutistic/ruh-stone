@@ -17,26 +17,47 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import CartDrawer from '@/components/CartDrawer';
 import ContactModal from '@/components/ContactModal';
 import { CraftProduct, CartItem, CraftCategory, isProductInStock } from '@/types';
-import { CRAFT_PRODUCTS } from '@/data/craftData';
 
 export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<CraftProduct | null>(null);
   const [enquiryProduct, setEnquiryProduct] = useState<CraftProduct | null>(null);
-  const [products, setProducts] = useState<CraftProduct[]>(CRAFT_PRODUCTS);
+  const [products, setProducts] = useState<CraftProduct[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<CraftCategory>('All');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    setIsLoadingProducts(true);
+
     fetch('/api/products')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
-        if (Array.isArray(data)) {
-          setProducts(data);
+        if (isMounted) {
+          if (Array.isArray(data)) {
+            setProducts(data);
+          } else {
+            setProducts([]);
+          }
+          setIsLoadingProducts(false);
         }
       })
-      .catch((err) => console.error('Error fetching storefront products:', err));
+      .catch((err) => {
+        console.error('Error fetching storefront products from Supabase:', err);
+        if (isMounted) {
+          setProducts([]);
+          setIsLoadingProducts(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleAddToCart = (product: CraftProduct, quantity: number = 1) => {
@@ -130,10 +151,12 @@ export default function Home() {
         {/* 5. PRODUCT GRID: 3-column handcrafted objects grid with realistic craft categories & INR pricing */}
         <ShopSection
           products={products}
+          isLoading={isLoadingProducts}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           onSelectProduct={setSelectedProduct}
           onQuickAddToCart={handleQuickAddToCart}
+          onOpenEnquiry={handleOpenEnquiry}
         />
 
         {/* 6. CRAFT COLLECTIONS: Categories (GERMAN SILVER, MARBLE, FIBRE) */}

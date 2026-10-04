@@ -8,7 +8,8 @@ interface SafeImageProps extends Omit<ImageProps, 'src'> {
   fallbackSrc?: string;
 }
 
-const DEFAULT_FALLBACK = '/images/atelier-carving.jpg';
+const DEFAULT_FALLBACK =
+  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect width='100%25' height='100%25' fill='%23ECE5D8'/%3E%3C/svg%3E";
 
 export default function SafeImage({
   src,

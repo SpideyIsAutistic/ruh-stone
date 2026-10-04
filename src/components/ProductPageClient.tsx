@@ -439,7 +439,11 @@ export default function ProductPageClient({
                 <div className="lg:col-span-6">
                   <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ECE4D6]">
                     <SafeImage
-                      src={product.theMaking.makingImage}
+                      src={
+                        product.theMaking.makingImage.includes('unsplash.com')
+                          ? '/images/atelier-carving.jpg'
+                          : product.theMaking.makingImage
+                      }
                       alt={`Artisan crafting ${product.name}`}
                       fill
                       sizes="(max-width: 1024px) 100vw, 50vw"

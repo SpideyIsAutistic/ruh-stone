@@ -3,7 +3,6 @@
 import React from 'react';
 import Image from 'next/image';
 import { CraftProduct } from '@/types';
-import { CRAFT_PRODUCTS } from '@/data/craftData';
 
 interface FeaturedEditorialProps {
   products?: CraftProduct[];
@@ -11,7 +10,7 @@ interface FeaturedEditorialProps {
 }
 
 export default function FeaturedEditorial({
-  products = CRAFT_PRODUCTS,
+  products = [],
   onSelectProduct,
 }: FeaturedEditorialProps) {
   return (

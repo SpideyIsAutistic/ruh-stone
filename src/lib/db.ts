@@ -36,42 +36,7 @@ export function getPgPool(): Pool | null {
 }
 
 function getInitialSeedProducts(): CraftProduct[] {
-  let customList: CraftProduct[] = [];
-  let deletedIds = new Set<string>();
-
-  try {
-    if (fs.existsSync(customDataFilePath)) {
-      customList = JSON.parse(fs.readFileSync(customDataFilePath, 'utf8') || '[]');
-    }
-  } catch (e) {
-    console.error('Error reading customProducts.json during seed:', e);
-  }
-
-  try {
-    if (fs.existsSync(deletedDataFilePath)) {
-      const deleted: string[] = JSON.parse(fs.readFileSync(deletedDataFilePath, 'utf8') || '[]');
-      deletedIds = new Set(deleted);
-    }
-  } catch (e) {
-    console.error('Error reading deletedProductIds.json during seed:', e);
-  }
-
-  const customMap = new Map(customList.map((p) => [p.id, p]));
-  const merged: CraftProduct[] = [];
-
-  for (const base of CRAFT_PRODUCTS) {
-    if (!deletedIds.has(base.id)) {
-      merged.push(customMap.get(base.id) || base);
-    }
-  }
-
-  for (const item of customList) {
-    if (!deletedIds.has(item.id) && !CRAFT_PRODUCTS.some((b) => b.id === item.id)) {
-      merged.unshift(item);
-    }
-  }
-
-  return merged;
+  return [];
 }
 
 /**
@@ -368,10 +333,10 @@ export async function dbGetProducts(options?: { includeDrafts?: boolean }): Prom
       return rows.map((r) => JSON.parse(r.data));
     }
   } catch (err: any) {
-    console.warn('[DB] dbGetProducts error, returning static seed fallback:', err?.message || err);
+    console.warn('[DB] dbGetProducts error:', err?.message || err);
   }
 
-  return getInitialSeedProducts();
+  return [];
 }
 
 /**
@@ -422,24 +387,10 @@ export async function dbGetProductBySlug(slug: string): Promise<CraftProduct | n
       return null;
     }
   } catch (err: any) {
-    console.warn('[DB] dbGetProductBySlug error, searching static fallback:', err?.message || err);
+    console.warn('[DB] dbGetProductBySlug error:', err?.message || err);
   }
 
-  const all = await dbGetProducts({ includeDrafts: true });
-  const cleanTarget = slug.trim().replace(/(^-+|-+$)/g, '').toLowerCase();
-  return (
-    all.find((p) => {
-      const pSlug = (p.slug || '').trim().replace(/(^-+|-+$)/g, '').toLowerCase();
-      const pId = (p.id || '').trim().toLowerCase();
-      return (
-        pSlug === cleanTarget ||
-        pId === cleanTarget ||
-        p.slug === slug ||
-        p.id === slug ||
-        (p.slug && p.slug.trim().toLowerCase() === slug.trim().toLowerCase())
-      );
-    }) || null
-  );
+  return null;
 }
 
 /**

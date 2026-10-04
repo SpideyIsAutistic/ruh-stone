@@ -96,7 +96,7 @@ export default function CraftCollections({
                   {/* Overlaid Title on Mobile/Hover */}
                   <div className="absolute bottom-4 left-4 right-4 text-[#FAF7F2]">
                     <span className="text-[9px] uppercase tracking-[0.25em] font-medium opacity-80 block">
-                      {count} {count === 1 ? 'PIECE' : 'PIECES'}
+                      {count > 0 ? `${count} ${count === 1 ? 'PIECE' : 'PIECES'}` : 'EXPLORE DISCIPLINE'}
                     </span>
                     <h3 className="font-serif text-lg text-[#FAF7F2] font-normal tracking-wider mt-0.5">
                       {cat.name}
