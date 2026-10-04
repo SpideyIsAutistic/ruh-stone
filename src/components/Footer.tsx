@@ -46,23 +46,38 @@ export default function Footer({ onOpenContact }: FooterProps) {
                 </svg>
                 <span className="font-sans text-[11px] tracking-wider font-medium">@ruhstonee</span>
               </a>
+
+              <a
+                href="mailto:support@ruhstone.com"
+                aria-label="Email support@ruhstone.com"
+                className="hover:text-[#23201D] transition-colors inline-flex items-center space-x-2 text-xs"
+              >
+                <svg className="w-4 h-4 fill-none stroke-current stroke-[1.5]" viewBox="0 0 24 24">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                <span className="font-sans text-[11px] tracking-wider font-medium">support@ruhstone.com</span>
+              </a>
             </div>
           </div>
 
-          {/* Right Column: Clean Link Columns (Exact User Spec) */}
+          {/* Right Column: Clean Link Columns */}
           <div className="md:col-span-6 grid grid-cols-2 gap-8 md:pl-16">
             <div className="flex flex-col space-y-3.5 text-xs font-sans tracking-[0.16em]">
               <span className="text-[10px] uppercase tracking-[0.25em] text-[#7A746C] font-semibold mb-1">
                 COLLECTIONS
               </span>
-              <a href="#shop" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
+              <a href="/#shop" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
                 Shop
               </a>
-              <a href="#collections" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
+              <a href="/#collections" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
                 Collections
               </a>
-              <a href="#about" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
+              <a href="/#about" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
                 About
+              </a>
+              <a href="/#faq" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
+                FAQ
               </a>
             </div>
 
@@ -72,32 +87,27 @@ export default function Footer({ onOpenContact }: FooterProps) {
               </span>
               <button
                 onClick={onOpenContact}
-                className="text-left text-[#23201D] hover:text-[#AA9B87] transition-colors focus:outline-none"
+                className="text-left text-[#23201D] hover:text-[#AA9B87] transition-colors focus:outline-none cursor-pointer"
               >
                 Contact
               </button>
               <a
-                href="#shipping"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert("RUH STONE offers complimentary insured white-glove shipping on all handmade orders across India, with international express dispatch to 45 countries.");
-                }}
+                href="mailto:support@ruhstone.com"
                 className="text-[#23201D] hover:text-[#AA9B87] transition-colors"
               >
-                Shipping
+                support@ruhstone.com
               </a>
               <a
-                href="#returns"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert("We accept complimentary returns within 14 days of delivery for all non-custom handmade objects in their original packaging.");
-                }}
+                href="/#faq"
                 className="text-[#23201D] hover:text-[#AA9B87] transition-colors"
               >
-                Returns
+                Shipping & Transit
               </a>
-              <a href="#privacy" className="text-[#23201D] hover:text-[#AA9B87] transition-colors">
-                Privacy
+              <a
+                href="/#faq"
+                className="text-[#23201D] hover:text-[#AA9B87] transition-colors"
+              >
+                Returns & Care
               </a>
             </div>
           </div>

@@ -23,9 +23,10 @@ export default function Navbar({ cartCount, onOpenCart, onOpenContact }: NavbarP
   }, []);
 
   const navLinks = [
-    { label: 'SHOP', href: '#shop' },
-    { label: 'COLLECTIONS', href: '#collections' },
-    { label: 'ABOUT', href: '#about' },
+    { label: 'SHOP', href: '/#shop' },
+    { label: 'COLLECTIONS', href: '/#collections' },
+    { label: 'ABOUT', href: '/#about' },
+    { label: 'FAQ', href: '/#faq' },
     { label: 'CONTACT', href: '#contact', onClick: onOpenContact },
   ];
 

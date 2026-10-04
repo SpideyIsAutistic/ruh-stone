@@ -421,6 +421,16 @@ export default function ProductDetailModal({
               >
                 VIEW DEDICATED ARTISAN PAGE →
               </Link>
+
+              <div className="pt-1 text-center text-[10px] text-[#7A746C] tracking-wider">
+                <span>Atelier Concierge: </span>
+                <a
+                  href="mailto:support@ruhstone.com"
+                  className="text-[#23201D] underline underline-offset-4 hover:text-[#AA9B87] transition-colors font-medium"
+                >
+                  support@ruhstone.com
+                </a>
+              </div>
             </div>
 
             {/* Recommended Pairing Card (Curated Companion Object) */}

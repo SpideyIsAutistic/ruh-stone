@@ -74,9 +74,18 @@ export default function ContactModal({
             <h2 className="font-serif text-3xl text-[#23201D] font-light mb-3">
               Connect with RUH STONE
             </h2>
-            <p className="text-xs text-[#7A746C] font-light mb-8 max-w-md">
+            <p className="text-xs text-[#7A746C] font-light mb-4 max-w-md leading-relaxed">
               Whether you wish to commission a bespoke sculpted piece, enquire about wedding gift registries, or explore curation for private spaces, we welcome your conversation.
             </p>
+            <div className="mb-6 py-2.5 px-3.5 bg-[#F4EFE6] border border-[#E8E0D2] flex items-center justify-between text-xs">
+              <span className="text-[#7A746C]">Direct Patron Support:</span>
+              <a
+                href="mailto:support@ruhstone.com"
+                className="font-medium text-[#23201D] hover:text-[#AA9B87] underline underline-offset-4 transition-colors"
+              >
+                support@ruhstone.com
+              </a>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

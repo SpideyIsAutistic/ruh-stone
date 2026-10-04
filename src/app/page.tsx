@@ -10,6 +10,7 @@ import CraftCollections from '@/components/CraftCollections';
 import StorySection from '@/components/StorySection';
 import LifestyleSection from '@/components/LifestyleSection';
 import NewsletterBanner from '@/components/NewsletterBanner';
+import FAQSection from '@/components/FAQSection';
 import Footer from '@/components/Footer';
 import ProductDetailModal from '@/components/ProductDetailModal';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -143,6 +144,9 @@ export default function Home() {
 
         {/* 8. EDITORIAL / LIFESTYLE SECTION: "MADE TO BELONG." refined warm Indian-inspired home */}
         <LifestyleSection />
+
+        {/* 9. FAQ SECTION: Questions about craft provenance, shipping, care, bespoke commissions & support@ruhstone.com */}
+        <FAQSection onOpenContact={() => setIsContactOpen(true)} />
 
         {/* 10. NEWSLETTER / FINAL CTA: "BRING CRAFT HOME." with handcrafted still life */}
         <NewsletterBanner />

@@ -9,7 +9,7 @@ import CartDrawer from '@/components/CartDrawer';
 import ContactModal from '@/components/ContactModal';
 import ProductCardImage from '@/components/ProductCardImage';
 import { CraftProduct, CartItem, isProductInStock, getEffectivePrice } from '@/types';
-import { ShoppingBag, MessageSquare, Check, Sparkles, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
+import { ShoppingBag, MessageSquare, Check, Sparkles, ShieldCheck, Truck, RotateCcw, ChevronDown, Mail } from 'lucide-react';
 
 interface ProductPageClientProps {
   product: CraftProduct;
@@ -26,6 +26,7 @@ export default function ProductPageClient({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const inStock = isProductInStock(product);
   const maxStock = typeof product.stockQuantity === 'number' ? product.stockQuantity : 99;
@@ -450,6 +451,103 @@ export default function ProductPageClient({
             </div>
           </section>
         )}
+
+        {/* Product FAQ & Inquiries Section */}
+        <section className="mt-24 pt-16 border-t border-[#E8E0D2]">
+          <div className="max-w-2xl mb-12">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A746C] font-medium block mb-2">
+              PIECE INQUIRIES & CARE
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#23201D] font-light">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xs md:text-sm text-[#7A746C] mt-2 font-light">
+              Questions regarding {product.name}, noble materials, fragile transit, and bespoke commissions. Reach our concierge at{' '}
+              <a
+                href="mailto:support@ruhstone.com"
+                className="text-[#23201D] underline underline-offset-4 font-medium hover:text-[#AA9B87] transition-colors"
+              >
+                support@ruhstone.com
+              </a>
+              .
+            </p>
+          </div>
+
+          <div className="max-w-3xl space-y-3.5">
+            {[
+              {
+                q: `How is ${product.name} packaged for secure fragile transport?`,
+                a: `Every piece is secured in multi-layered, shock-absorbent cushioning and double-walled rigid enclosures tailored to prevent transit impact. We guarantee zero breakage with complimentary insured white-glove delivery across India.`,
+              },
+              {
+                q: `How do I care for and maintain this ${product.material} piece?`,
+                a: `Dust gently with a clean microfibre cloth. Avoid harsh chemicals, abrasive scouring, or standing liquids. Living noble materials like German silver and natural stone develop a beautiful, organic patina over time.`,
+              },
+              {
+                q: `Can I commission a custom size, inscription, or wedding gift order?`,
+                a: (
+                  <span>
+                    Yes. Our master artisans execute bespoke sizing and heirloom wedding registries. Email us directly at{' '}
+                    <a
+                      href="mailto:support@ruhstone.com"
+                      className="text-[#23201D] font-medium underline underline-offset-4 hover:text-[#AA9B87] transition-colors"
+                    >
+                      support@ruhstone.com
+                    </a>{' '}
+                    with your specifications.
+                  </span>
+                ),
+              },
+              {
+                q: `What is the return window if this piece doesn't suit my space?`,
+                a: (
+                  <span>
+                    We provide a 14-day return window for all standard catalogue pieces in original packaging. If you need assistance, contact our patron desk at{' '}
+                    <a
+                      href="mailto:support@ruhstone.com"
+                      className="text-[#23201D] font-medium underline underline-offset-4 hover:text-[#AA9B87] transition-colors"
+                    >
+                      support@ruhstone.com
+                    </a>
+                    .
+                  </span>
+                ),
+              },
+            ].map((faq, idx) => {
+              const isOpen = openFaqIndex === idx;
+              return (
+                <div
+                  key={idx}
+                  className={`border transition-colors duration-200 ${
+                    isOpen ? 'border-[#23201D]/40 bg-[#F4EFE6]/60' : 'border-[#E8E0D2] bg-[#FAF7F2] hover:border-[#D1C2AC]'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                    className="w-full text-left py-4.5 px-6 sm:px-8 flex items-center justify-between gap-4 cursor-pointer focus:outline-none"
+                  >
+                    <span className="font-serif text-base sm:text-lg text-[#23201D] font-normal leading-snug">
+                      {faq.q}
+                    </span>
+                    <div
+                      className={`w-6 h-6 shrink-0 rounded-full border border-[#D1C2AC] flex items-center justify-center transition-transform duration-300 ${
+                        isOpen ? 'rotate-180 bg-[#23201D] text-[#FAF7F2] border-[#23201D]' : 'text-[#23201D]'
+                      }`}
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="px-6 sm:px-8 pb-5 pt-1 text-xs md:text-sm text-[#7A746C] leading-relaxed font-light border-t border-[#E8E0D2]/50 animate-in fade-in duration-200">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         {/* Recommended Products Grid */}
         {recommendedProducts.length > 0 && (
