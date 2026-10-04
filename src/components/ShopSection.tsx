@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import ProductCardImage from './ProductCardImage';
 import { CraftProduct, CraftCategory, isProductInStock } from '@/types';
 import { CRAFT_PRODUCTS } from '@/data/craftData';
@@ -10,7 +11,7 @@ interface ShopSectionProps {
   products?: CraftProduct[];
   selectedCategory?: CraftCategory;
   onSelectCategory?: (category: CraftCategory) => void;
-  onSelectProduct: (product: CraftProduct) => void;
+  onSelectProduct?: (product: CraftProduct) => void;
   onQuickAddToCart?: (product: CraftProduct) => void;
 }
 
@@ -69,69 +70,64 @@ export default function ShopSection({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-12">
           {filteredProducts.map((product) => {
             const inStock = isProductInStock(product);
+            const productHref = `/products/${product.slug || product.id}`;
             return (
               <div
                 key={product.id}
-                onClick={() => onSelectProduct(product)}
-                className="group cursor-pointer flex flex-col"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onSelectProduct(product);
-                }}
-                aria-label={`View details for ${product.name}`}
+                className="group flex flex-col"
               >
                 {/* Product Photography Container with Dual Image Hover-Swap */}
-                <ProductCardImage
-                  product={product}
-                  aspectRatio="aspect-[4/5]"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="mb-5"
-                >
-                  {/* Out of Stock or On Sale Badge */}
-                  {!inStock ? (
-                    <div className="absolute top-3 left-3 z-10">
-                      <span className="bg-[#5C554E] text-[#FAF7F2] text-[9px] font-sans tracking-[0.25em] uppercase px-2 py-0.5 font-medium shadow-xs">
-                        SOLD OUT
-                      </span>
-                    </div>
-                  ) : product.isOnSale ? (
-                    <div className="absolute top-3 left-3 z-10">
-                      <span className="bg-[#23201D] text-[#FAF7F2] text-[9px] font-sans tracking-[0.25em] uppercase px-2 py-0.5 font-medium shadow-xs">
-                        SALE
-                      </span>
-                    </div>
-                  ) : null}
+                <div className="relative mb-5">
+                  <Link href={productHref} className="block overflow-hidden" tabIndex={-1} aria-hidden="true">
+                    <ProductCardImage
+                      product={product}
+                      aspectRatio="aspect-[4/5]"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    >
+                      {/* Out of Stock or On Sale Badge */}
+                      {!inStock ? (
+                        <div className="absolute top-3 left-3 z-10">
+                          <span className="bg-[#5C554E] text-[#FAF7F2] text-[9px] font-sans tracking-[0.25em] uppercase px-2 py-0.5 font-medium shadow-xs">
+                            SOLD OUT
+                          </span>
+                        </div>
+                      ) : product.isOnSale ? (
+                        <div className="absolute top-3 left-3 z-10">
+                          <span className="bg-[#23201D] text-[#FAF7F2] text-[9px] font-sans tracking-[0.25em] uppercase px-2 py-0.5 font-medium shadow-xs">
+                            SALE
+                          </span>
+                        </div>
+                      ) : null}
+                    </ProductCardImage>
+                  </Link>
 
-                  {/* Subtle Hover Overlay with Quick Action */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300 flex items-end justify-between p-6 opacity-0 group-hover:opacity-100">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectProduct(product);
-                      }}
-                      className="bg-[#FAF7F2]/95 backdrop-blur-sm text-[#23201D] text-[10px] uppercase font-sans tracking-[0.2em] px-3.5 py-2 font-medium hover:bg-white transition-colors cursor-pointer"
+                  {/* Subtle Hover Overlay with Quick Action (Desktop) */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300 flex items-end justify-between p-6 opacity-0 group-hover:opacity-100 z-20 pointer-events-none">
+                    <Link
+                      href={productHref}
+                      className="pointer-events-auto bg-[#FAF7F2]/95 backdrop-blur-sm text-[#23201D] text-[10px] uppercase font-sans tracking-[0.2em] px-3.5 py-2 font-medium hover:bg-white transition-colors cursor-pointer inline-flex items-center"
                       aria-label={`View details for ${product.name}`}
                     >
                       {!inStock ? 'VIEW & COMMISSION' : 'VIEW DETAILS'}
-                    </button>
+                    </Link>
 
                     {onQuickAddToCart && (
                       !inStock ? (
                         <span
-                          className="bg-[#5C554E]/90 text-[#FAF7F2]/90 text-[10px] uppercase font-sans tracking-[0.2em] px-3.5 py-2 font-medium cursor-not-allowed"
+                          className="pointer-events-auto bg-[#5C554E]/90 text-[#FAF7F2]/90 text-[10px] uppercase font-sans tracking-[0.2em] px-3.5 py-2 font-medium cursor-not-allowed"
                           title="Currently out of stock"
                         >
                           SOLD OUT
                         </span>
                       ) : (
                         <button
+                          type="button"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             onQuickAddToCart(product);
                           }}
-                          className="bg-[#23201D] text-[#FAF7F2] text-[10px] uppercase font-sans tracking-[0.2em] px-3.5 py-2 font-medium hover:bg-[#3A3027] transition-colors"
+                          className="pointer-events-auto bg-[#23201D] text-[#FAF7F2] text-[10px] uppercase font-sans tracking-[0.2em] px-3.5 py-2 font-medium hover:bg-[#3A3027] transition-colors cursor-pointer"
                           title="Add piece to cart"
                         >
                           + ADD TO CART
@@ -139,13 +135,16 @@ export default function ShopSection({
                       )
                     )}
                   </div>
-                </ProductCardImage>
+                </div>
 
                 {/* Product Info (Ventura Exact Hierarchy: Name, Short Craft Description, Price) */}
                 <div className="flex flex-col space-y-1">
-                  <h3 className="font-serif text-lg md:text-xl text-[#23201D] group-hover:text-[#AA9B87] transition-colors font-normal leading-snug">
+                  <Link
+                    href={productHref}
+                    className="font-serif text-lg md:text-xl text-[#23201D] group-hover:text-[#AA9B87] transition-colors font-normal leading-snug hover:underline underline-offset-4 decoration-[#AA9B87]/50"
+                  >
                     {product.name}
-                  </h3>
+                  </Link>
                   <span className="text-[11px] text-[#7A746C] tracking-wide">
                     {product.material} · {product.origin}
                   </span>
@@ -175,6 +174,29 @@ export default function ShopSection({
                       <span className="text-[10px] uppercase font-sans tracking-widest text-[#8B3A2B] font-medium">
                         Sold Out
                       </span>
+                    )}
+                  </div>
+
+                  {/* Dedicated Mobile Action Target (visible on small touchscreens) */}
+                  <div className="sm:hidden pt-3 flex items-center justify-between border-t border-[#E8E0D2]/60 mt-2">
+                    <Link
+                      href={productHref}
+                      className="text-[10px] uppercase font-sans tracking-[0.2em] text-[#23201D] underline underline-offset-4 font-medium"
+                    >
+                      VIEW DETAILS →
+                    </Link>
+                    {inStock && onQuickAddToCart && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onQuickAddToCart(product);
+                        }}
+                        className="text-[10px] uppercase font-sans tracking-[0.2em] text-[#7A746C] hover:text-[#23201D] font-medium"
+                      >
+                        + ADD TO CART
+                      </button>
                     )}
                   </div>
                 </div>

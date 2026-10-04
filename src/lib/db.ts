@@ -383,10 +383,21 @@ export async function dbGetProductBySlug(slug: string): Promise<CraftProduct | n
     const { isPostgres } = getDatabaseConfig();
     const pool = getPgPool();
 
+    const rawSlug = slug.trim();
+    const trimmedSlug = rawSlug.replace(/(^-+|-+$)/g, '');
+    const withTrailing = `${trimmedSlug}-`;
+
     if (isPostgres && pool) {
       const res = await pool.query(
-        'SELECT data FROM products WHERE slug = $1 OR id = $1 LIMIT 1',
-        [slug]
+        `SELECT data FROM products 
+         WHERE slug = $1 
+            OR slug = $2 
+            OR slug = $3 
+            OR id = $1 
+            OR id = $2 
+            OR TRIM(BOTH '-' FROM slug) = $2
+         LIMIT 1`,
+        [rawSlug, trimmedSlug, withTrailing]
       );
       if (res.rows.length > 0) {
         const r = res.rows[0];
@@ -397,8 +408,16 @@ export async function dbGetProductBySlug(slug: string): Promise<CraftProduct | n
 
     if (sqliteDb) {
       const row = sqliteDb
-        .prepare('SELECT data FROM products WHERE slug = ? OR id = ? LIMIT 1')
-        .get(slug, slug) as { data: string } | undefined;
+        .prepare(`
+          SELECT data FROM products 
+          WHERE slug = ? 
+             OR slug = ? 
+             OR slug = ? 
+             OR id = ? 
+             OR id = ? 
+          LIMIT 1
+        `)
+        .get(rawSlug, trimmedSlug, withTrailing, rawSlug, trimmedSlug) as { data: string } | undefined;
       if (row) return JSON.parse(row.data);
       return null;
     }
@@ -407,7 +426,20 @@ export async function dbGetProductBySlug(slug: string): Promise<CraftProduct | n
   }
 
   const all = await dbGetProducts({ includeDrafts: true });
-  return all.find((p) => p.slug === slug || p.id === slug) || null;
+  const cleanTarget = slug.trim().replace(/(^-+|-+$)/g, '').toLowerCase();
+  return (
+    all.find((p) => {
+      const pSlug = (p.slug || '').trim().replace(/(^-+|-+$)/g, '').toLowerCase();
+      const pId = (p.id || '').trim().toLowerCase();
+      return (
+        pSlug === cleanTarget ||
+        pId === cleanTarget ||
+        p.slug === slug ||
+        p.id === slug ||
+        (p.slug && p.slug.trim().toLowerCase() === slug.trim().toLowerCase())
+      );
+    }) || null
+  );
 }
 
 /**

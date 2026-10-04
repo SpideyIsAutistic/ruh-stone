@@ -8,11 +8,25 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+export const dynamicParams = true;
+export const revalidate = 60;
+
 export async function generateStaticParams() {
   const products = await getAllProducts();
-  return products.map((product) => ({
-    slug: product.slug,
-  }));
+  const list: { slug: string }[] = [];
+  for (const product of products) {
+    if (product.slug) {
+      list.push({ slug: product.slug });
+      const clean = product.slug.trim().replace(/(^-+|-+$)/g, '');
+      if (clean && clean !== product.slug) {
+        list.push({ slug: clean });
+      }
+    }
+    if (product.id && product.id !== product.slug) {
+      list.push({ slug: product.id });
+    }
+  }
+  return list;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

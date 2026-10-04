@@ -141,8 +141,8 @@ export default function ProductDetailModal({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Left Column: Image Gallery (6 Cols) */}
           <div className="lg:col-span-6 flex flex-col space-y-4">
-            {/* Primary Large Image - 4:5 Portrait Ratio to prevent cropping the product */}
-            <div className="group relative aspect-[4/5] w-full max-h-[640px] overflow-hidden bg-[#ECE4D6]">
+            {/* Primary Large Image - Responsive Ratio to prevent pushing content off screen on mobile */}
+            <div className="group relative aspect-[4/3] sm:aspect-[4/5] w-full max-h-[380px] lg:max-h-[640px] overflow-hidden bg-[#ECE4D6]">
               <SafeImage
                 src={currentGalleryImage.url}
                 alt={currentGalleryImage.label || product.name}
