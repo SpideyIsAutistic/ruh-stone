@@ -29,8 +29,23 @@ import {
   CreditCard,
   ExternalLink,
   RefreshCw,
+  MessageSquare,
+  Mail,
+  Phone,
+  Clock,
+  User,
+  Filter,
+  MessageCircle,
 } from 'lucide-react';
-import { CraftProduct, CraftCategory, isProductInStock, Order, OrderStatus } from '@/types';
+import {
+  CraftProduct,
+  CraftCategory,
+  isProductInStock,
+  Order,
+  OrderStatus,
+  AtelierInquiry,
+  InquiryStatus,
+} from '@/types';
 import ProductCardImage from '@/components/ProductCardImage';
 
 export default function AdminPage() {
@@ -39,11 +54,21 @@ export default function AdminPage() {
   const [passcodeError, setPasscodeError] = useState(false);
 
   const [products, setProducts] = useState<CraftProduct[]>([]);
-  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'orders'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'orders' | 'inquiries'>('list');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [orderFilter, setOrderFilter] = useState<string>('all');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  // Inquiries State
+  const [inquiries, setInquiries] = useState<AtelierInquiry[]>([]);
+  const [loadingInquiries, setLoadingInquiries] = useState(false);
+  const [inquiryFilter, setInquiryFilter] = useState<'all' | 'new' | 'contacted' | 'resolved' | 'archived'>('all');
+  const [inquirySearch, setInquirySearch] = useState('');
+  const [inquiryTypeFilter, setInquiryTypeFilter] = useState('all');
+  const [updatingInquiryId, setUpdatingInquiryId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteInputValue, setNoteInputValue] = useState('');
   const [adminCategoryFilter, setAdminCategoryFilter] = useState<CraftCategory>('All');
   const [editingPriceState, setEditingPriceState] = useState<{
     id: string;
@@ -93,6 +118,7 @@ export default function AdminPage() {
     if (savedAuth === 'true') {
       setIsAuthenticated(true);
       fetchOrders();
+      fetchInquiries();
     }
     fetchProducts();
   }, []);
@@ -125,6 +151,69 @@ export default function AdminPage() {
     }
   };
 
+  const fetchInquiries = async () => {
+    setLoadingInquiries(true);
+    try {
+      const res = await fetch('/api/inquiries');
+      if (res.ok) {
+        const data = await res.json();
+        setInquiries(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to load inquiries', err);
+    } finally {
+      setLoadingInquiries(false);
+    }
+  };
+
+  const handleUpdateInquiryStatus = async (id: string, newStatus: InquiryStatus) => {
+    setUpdatingInquiryId(id);
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      if (res.ok) {
+        const { inquiry: updated } = await res.json();
+        setInquiries((prev) => prev.map((inq) => (inq.id === id ? updated : inq)));
+      }
+    } catch (err) {
+      console.error('Failed to update inquiry status', err);
+    } finally {
+      setUpdatingInquiryId(null);
+    }
+  };
+
+  const handleSaveInquiryNote = async (id: string, notes: string) => {
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, notes }),
+      });
+      if (res.ok) {
+        const { inquiry: updated } = await res.json();
+        setInquiries((prev) => prev.map((inq) => (inq.id === id ? updated : inq)));
+        setEditingNoteId(null);
+      }
+    } catch (err) {
+      console.error('Failed to save inquiry note', err);
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    if (!confirm('Are you sure you want to permanently delete this inquiry?')) return;
+    try {
+      const res = await fetch(`/api/inquiries?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setInquiries((prev) => prev.filter((inq) => inq.id !== id));
+      }
+    } catch (err) {
+      console.error('Failed to delete inquiry', err);
+    }
+  };
+
   const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     setUpdatingOrderId(orderId);
     try {
@@ -151,6 +240,7 @@ export default function AdminPage() {
       localStorage.setItem('ruh_admin_auth', 'true');
       setPasscodeError(false);
       fetchOrders();
+      fetchInquiries();
     } else {
       setPasscodeError(true);
     }
@@ -762,6 +852,25 @@ export default function AdminPage() {
           >
             <Package className="w-3.5 h-3.5" />
             <span>ORDERS ({orders.length})</span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('inquiries');
+              fetchInquiries();
+            }}
+            className={`text-xs uppercase tracking-widest px-3 py-1.5 border transition-all flex items-center space-x-1.5 ${
+              activeTab === 'inquiries'
+                ? 'border-[#23201D] bg-[#23201D] text-[#FAF7F2]'
+                : 'border-[#E8E0D2] text-[#23201D] hover:bg-[#ECE4D6]'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>INQUIRIES ({inquiries.length})</span>
+            {inquiries.filter((i) => i.status === 'new').length > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 text-[9px] bg-[#9E4733] text-[#FAF7F2] font-semibold rounded-full">
+                {inquiries.filter((i) => i.status === 'new').length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('create')}
@@ -2094,6 +2203,377 @@ export default function AdminPage() {
                       </div>
                     </div>
                   ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: ATELIER INQUIRIES & BESPOKE COMMISSIONS */}
+        {activeTab === 'inquiries' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Header & Metrics */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E8E0D2] pb-6">
+              <div>
+                <h2 className="font-serif text-2xl text-[#23201D] font-light">
+                  Atelier Inquiries & Bespoke Commissions
+                </h2>
+                <p className="text-xs text-[#7A746C] mt-1">
+                  Direct patron inquiries, custom commissions, private viewings, and concierge requests submitted from the storefront.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={fetchInquiries}
+                  disabled={loadingInquiries}
+                  className="px-3.5 py-2 border border-[#D1C2AC] text-xs uppercase tracking-wider text-[#23201D] hover:bg-[#ECE4D6] transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingInquiries ? 'animate-spin' : ''}`} />
+                  <span>REFRESH</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics Ribbon */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-5">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block">
+                  Total Inquiries
+                </span>
+                <span className="font-serif text-2xl text-[#23201D] font-light mt-1 block">
+                  {inquiries.length}
+                </span>
+              </div>
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-5">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block">
+                  New & Unread
+                </span>
+                <span className="font-serif text-2xl text-[#9E4733] font-light mt-1 block flex items-center gap-2">
+                  {inquiries.filter((i) => i.status === 'new').length}
+                  {inquiries.filter((i) => i.status === 'new').length > 0 && (
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-[#9E4733]/15 text-[#9E4733] font-sans font-medium">
+                      Action Required
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-5">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block">
+                  In Dialogue / Contacted
+                </span>
+                <span className="font-serif text-2xl text-blue-800 font-light mt-1 block">
+                  {inquiries.filter((i) => i.status === 'contacted').length}
+                </span>
+              </div>
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-5">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block">
+                  Resolved / Concluded
+                </span>
+                <span className="font-serif text-2xl text-[#2A6638] font-light mt-1 block">
+                  {inquiries.filter((i) => i.status === 'resolved').length}
+                </span>
+              </div>
+            </div>
+
+            {/* Filters & Search Toolbar */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E8E0D2] pb-4">
+              {/* Status Filter Tabs */}
+              <div className="flex items-center space-x-2 text-xs overflow-x-auto">
+                {(['all', 'new', 'contacted', 'resolved', 'archived'] as const).map((filter) => {
+                  const count =
+                    filter === 'all'
+                      ? inquiries.length
+                      : inquiries.filter((i) => i.status === filter).length;
+                  return (
+                    <button
+                      key={filter}
+                      onClick={() => setInquiryFilter(filter)}
+                      className={`px-3 py-1.5 uppercase tracking-wider text-[11px] transition-colors flex items-center space-x-1.5 ${
+                        inquiryFilter === filter
+                          ? 'bg-[#23201D] text-[#FAF7F2]'
+                          : 'text-[#7A746C] hover:text-[#23201D]'
+                      }`}
+                    >
+                      <span className="capitalize">{filter}</span>
+                      <span className="text-[10px] opacity-75">({count})</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Inquiry Type & Search Bar */}
+              <div className="flex items-center gap-3">
+                <select
+                  value={inquiryTypeFilter}
+                  onChange={(e) => setInquiryTypeFilter(e.target.value)}
+                  className="text-xs border border-[#D1C2AC] bg-[#FAF7F2] px-2.5 py-1.5 text-[#23201D] focus:outline-none"
+                >
+                  <option value="all">All Inquiry Types</option>
+                  <option value="Bespoke Commission">Bespoke Commission</option>
+                  <option value="Product Inquiry">Product Inquiry</option>
+                  <option value="Private Viewing">Private Viewing</option>
+                  <option value="Commercial">Commercial / Architectural</option>
+                  <option value="General">General Inquiry</option>
+                </select>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={inquirySearch}
+                    onChange={(e) => setInquirySearch(e.target.value)}
+                    placeholder="Search inquiries..."
+                    className="w-48 sm:w-64 bg-[#FAF7F2] border border-[#D1C2AC] px-3 py-1.5 text-xs text-[#23201D] placeholder-[#A0988E] focus:border-[#23201D] focus:outline-none tracking-wide"
+                  />
+                  {inquirySearch && (
+                    <button
+                      onClick={() => setInquirySearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[#7A746C] hover:text-[#23201D]"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Inquiries Listing */}
+            {inquiries.length === 0 ? (
+              <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-12 text-center">
+                <MessageSquare className="w-10 h-10 text-[#D1C2AC] mx-auto mb-3 stroke-[1.2]" />
+                <h3 className="font-serif text-lg text-[#23201D]">No Inquiries Recorded Yet</h3>
+                <p className="text-xs text-[#7A746C] mt-1 max-w-sm mx-auto">
+                  When patrons submit messages via the "Connect with RUH STONE" modal or bespoke request forms, they will appear here instantly.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {inquiries
+                  .filter((inq) => {
+                    if (inquiryFilter !== 'all' && inq.status !== inquiryFilter) return false;
+                    if (inquiryTypeFilter !== 'all') {
+                      const typeMatch = inq.inquiryType?.toLowerCase().includes(inquiryTypeFilter.toLowerCase());
+                      if (!typeMatch) return false;
+                    }
+                    if (inquirySearch.trim()) {
+                      const q = inquirySearch.toLowerCase();
+                      const matches =
+                        inq.name.toLowerCase().includes(q) ||
+                        inq.email.toLowerCase().includes(q) ||
+                        (inq.phone && inq.phone.toLowerCase().includes(q)) ||
+                        inq.message.toLowerCase().includes(q) ||
+                        (inq.productName && inq.productName.toLowerCase().includes(q)) ||
+                        (inq.notes && inq.notes.toLowerCase().includes(q));
+                      if (!matches) return false;
+                    }
+                    return true;
+                  })
+                  .map((inq) => {
+                    const formattedDate = new Date(inq.createdAt).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+
+                    const isEditingNote = editingNoteId === inq.id;
+
+                    return (
+                      <div
+                        key={inq.id}
+                        className="bg-white border border-[#E8E0D2] p-6 space-y-4 hover:border-[#D1C2AC] transition-colors"
+                      >
+                        {/* Top Bar: Patron + Type + Status + Date */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#F2ECE1] pb-4">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="font-serif text-xl text-[#23201D] font-light">
+                              {inq.name}
+                            </span>
+                            <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 border border-[#D1C2AC] bg-[#FAF7F2] text-[#23201D] font-medium">
+                              {inq.inquiryType || 'General Inquiry'}
+                            </span>
+                            {inq.productName && (
+                              <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-[#FAF7F2] border border-[#E8E0D2] text-[#7A746C]">
+                                Piece: <strong className="text-[#23201D]">{inq.productName}</strong>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center space-x-3">
+                            <span className="text-[11px] text-[#7A746C] flex items-center space-x-1">
+                              <Clock className="w-3 h-3 text-[#A0988E]" />
+                              <span>{formattedDate}</span>
+                            </span>
+
+                            {/* Status badge */}
+                            <span
+                              className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 border ${
+                                inq.status === 'new'
+                                  ? 'bg-[#9E4733]/10 text-[#9E4733] border-[#9E4733]/30 font-medium'
+                                  : inq.status === 'contacted'
+                                  ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                  : inq.status === 'resolved'
+                                  ? 'bg-[#2A6638]/10 text-[#2A6638] border-[#2A6638]/30 font-medium'
+                                  : 'bg-stone-100 text-stone-600 border-stone-200'
+                              }`}
+                            >
+                              {inq.status === 'new'
+                                ? '● New Inquiry'
+                                : inq.status === 'contacted'
+                                ? 'In Dialogue'
+                                : inq.status === 'resolved'
+                                ? '✓ Resolved'
+                                : 'Archived'}
+                            </span>
+
+                            {/* Status Selector */}
+                            <div className="flex items-center space-x-1.5">
+                              <span className="text-[10px] uppercase text-[#7A746C]">Status:</span>
+                              <select
+                                value={inq.status}
+                                disabled={updatingInquiryId === inq.id}
+                                onChange={(e) =>
+                                  handleUpdateInquiryStatus(
+                                    inq.id,
+                                    e.target.value as InquiryStatus
+                                  )
+                                }
+                                className="text-xs border border-[#D1C2AC] bg-[#FAF7F2] px-2 py-1 text-[#23201D] focus:outline-none"
+                              >
+                                <option value="new">New</option>
+                                <option value="contacted">Contacted</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="archived">Archived</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Patron Contact Row */}
+                        <div className="flex flex-wrap items-center gap-6 text-xs text-[#57524A] pt-1">
+                          <a
+                            href={`mailto:${inq.email}?subject=RUH STONE Atelier Inquiry - ${encodeURIComponent(inq.inquiryType || 'Response')}`}
+                            className="inline-flex items-center space-x-1.5 text-[#23201D] hover:underline"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-[#7A746C]" />
+                            <span>{inq.email}</span>
+                          </a>
+
+                          {inq.phone ? (
+                            <>
+                              <a
+                                href={`tel:${inq.phone}`}
+                                className="inline-flex items-center space-x-1.5 text-[#23201D] hover:underline"
+                              >
+                                <Phone className="w-3.5 h-3.5 text-[#7A746C]" />
+                                <span>{inq.phone}</span>
+                              </a>
+                              <a
+                                href={`https://wa.me/${inq.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${inq.name}, thank you for reaching out to RUH STONE regarding your inquiry.`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center space-x-1 text-[#2A6638] hover:underline"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>WhatsApp Patron</span>
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-[#A0988E] italic">No phone provided</span>
+                          )}
+                        </div>
+
+                        {/* Message Box */}
+                        <div className="bg-[#FAF7F2] border border-[#E8E0D2] p-4 text-xs text-[#23201D] leading-relaxed font-sans whitespace-pre-wrap">
+                          <span className="text-[10px] uppercase tracking-widest text-[#7A746C] block mb-1 font-medium">
+                            Patron Note / Commission Details:
+                          </span>
+                          {inq.message}
+                        </div>
+
+                        {/* Internal Atelier Notes Section */}
+                        <div className="pt-2 border-t border-[#F2ECE1] space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] font-medium">
+                              Internal Atelier Log & Notes
+                            </span>
+                            {!isEditingNote && (
+                              <button
+                                onClick={() => {
+                                  setEditingNoteId(inq.id);
+                                  setNoteInputValue(inq.notes || '');
+                                }}
+                                className="text-[11px] uppercase tracking-wider text-[#7A746C] hover:text-[#23201D] flex items-center space-x-1"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                                <span>{inq.notes ? 'Edit Note' : 'Add Note'}</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {isEditingNote ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={noteInputValue}
+                                onChange={(e) => setNoteInputValue(e.target.value)}
+                                placeholder="Add follow-up notes, phone call logs, bespoke quote details, or artisan requirements..."
+                                rows={2}
+                                className="w-full bg-[#FAF7F2] border border-[#D1C2AC] p-2.5 text-xs text-[#23201D] focus:border-[#23201D] focus:outline-none"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleSaveInquiryNote(inq.id, noteInputValue)}
+                                  className="px-3 py-1 bg-[#23201D] text-[#FAF7F2] text-[11px] uppercase tracking-wider hover:bg-[#3A3027]"
+                                >
+                                  Save Note
+                                </button>
+                                <button
+                                  onClick={() => setEditingNoteId(null)}
+                                  className="px-3 py-1 border border-[#D1C2AC] text-[11px] uppercase tracking-wider text-[#7A746C] hover:text-[#23201D]"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-[#57524A] italic">
+                              {inq.notes || 'No internal notes recorded for this inquiry yet.'}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Action Footer */}
+                        <div className="flex items-center justify-between pt-3 border-t border-[#F2ECE1] text-xs">
+                          <div className="flex items-center space-x-3">
+                            <a
+                              href={`mailto:${inq.email}?subject=RUH STONE Atelier Inquiry - ${encodeURIComponent(inq.inquiryType || 'Response')}`}
+                              className="px-3 py-1.5 border border-[#23201D] text-[#23201D] hover:bg-[#23201D] hover:text-[#FAF7F2] transition-colors text-[11px] uppercase tracking-wider inline-flex items-center space-x-1.5"
+                            >
+                              <Mail className="w-3 h-3" />
+                              <span>Reply via Email</span>
+                            </a>
+                            {inq.phone && (
+                              <a
+                                href={`tel:${inq.phone}`}
+                                className="px-3 py-1.5 border border-[#D1C2AC] text-[#23201D] hover:bg-[#ECE4D6] transition-colors text-[11px] uppercase tracking-wider inline-flex items-center space-x-1.5"
+                              >
+                                <Phone className="w-3 h-3" />
+                                <span>Call Patron</span>
+                              </a>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => handleDeleteInquiry(inq.id)}
+                            className="text-[#9E4733] hover:text-red-700 text-[11px] uppercase tracking-wider flex items-center space-x-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete Inquiry</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

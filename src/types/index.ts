@@ -177,3 +177,21 @@ export interface AbandonedCartSession {
   lastReminderAt?: string;
 }
 
+export type InquiryStatus = 'new' | 'contacted' | 'resolved' | 'archived';
+
+export interface AtelierInquiry {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  inquiryType: string;
+  message: string;
+  productId?: string;
+  productName?: string;
+  status: InquiryStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+

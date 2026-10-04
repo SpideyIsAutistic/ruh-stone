@@ -123,6 +123,25 @@ export async function initDatabase(): Promise<void> {
           created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX IF NOT EXISTS idx_abandoned_carts_restore_token ON abandoned_carts (restore_token);
+
+        CREATE TABLE IF NOT EXISTS inquiries (
+          id VARCHAR(255) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          phone VARCHAR(50),
+          inquiry_type VARCHAR(100) NOT NULL,
+          message TEXT NOT NULL,
+          product_id VARCHAR(255),
+          product_name VARCHAR(255),
+          status VARCHAR(50) DEFAULT 'new',
+          notes TEXT,
+          raw_data JSONB NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_inquiries_email ON inquiries (email);
+        CREATE INDEX IF NOT EXISTS idx_inquiries_status ON inquiries (status);
+        CREATE INDEX IF NOT EXISTS idx_inquiries_created_at ON inquiries (created_at DESC);
       `);
 
       // Seed initial products if table is completely empty

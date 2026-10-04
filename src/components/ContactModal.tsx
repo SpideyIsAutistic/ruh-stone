@@ -25,12 +25,50 @@ export default function ContactModal({
     inquiryType: 'Artisan Commission',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          inquiryType: form.inquiryType,
+          message: form.message,
+          productId: initialProduct?.id,
+          productName: initialProduct?.name,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to submit inquiry. Please try again.');
+      }
+
+      setSubmitted(true);
+      setForm({
+        name: '',
+        email: '',
+        phone: '',
+        message: '',
+        inquiryType: 'Artisan Commission',
+      });
+    } catch (err: any) {
+      console.error('Inquiry submission error:', err);
+      setErrorMessage(err.message || 'Unable to submit inquiry at this moment. You can reach us directly at support@ruhstone.com.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -161,11 +199,18 @@ export default function ContactModal({
                 />
               </div>
 
+              {errorMessage && (
+                <div className="p-3 bg-[#8B3A2B]/10 border border-[#8B3A2B]/30 text-xs text-[#8B3A2B] leading-relaxed">
+                  {errorMessage}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-[#23201D] hover:bg-[#3A3027] text-[#FAF7F2] py-4 text-[11px] font-sans tracking-[0.24em] uppercase transition-colors"
+                disabled={isSubmitting}
+                className="w-full bg-[#23201D] hover:bg-[#3A3027] text-[#FAF7F2] py-4 text-[11px] font-sans tracking-[0.24em] uppercase transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                SUBMIT ATELIER INQUIRY
+                {isSubmitting ? 'SUBMITTING ATELIER INQUIRY...' : 'SUBMIT ATELIER INQUIRY'}
               </button>
             </form>
           </div>
