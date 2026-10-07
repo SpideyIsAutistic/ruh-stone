@@ -294,3 +294,135 @@ export function getShippingConfirmationEmail(order: Order): EmailPayload {
     html,
   };
 }
+
+/**
+ * 5. Account Welcome Email
+ */
+export function getAccountWelcomeEmail(params: { email: string; name: string }): EmailPayload {
+  const { email, name } = params;
+  const html = wrapEmailTemplate(`
+    <h1 style="font-family: Georgia, serif; font-size: 22px; font-weight: 300; letter-spacing: 0.08em; text-align: center; margin: 0 0 12px 0;">
+      Welcome to the RUH STONE Atelier
+    </h1>
+    <p style="font-size: 13px; line-height: 1.6; color: #57524A; text-align: center; margin: 0 0 24px 0;">
+      Greetings, ${name || 'Patron'}. Your patron account has been established. You now have privileged access to your order history, verified provenance records, and curated heirloom selections.
+    </p>
+
+    <div style="background-color: #FAF7F2; border: 1px solid #E8E0D2; padding: 20px; margin-bottom: 24px; font-size: 12px; line-height: 1.8;">
+      <div><strong>Registered Email:</strong> ${email}</div>
+      <div><strong>Privilege:</strong> Verified Atelier Patron</div>
+      <div><strong>Atelier Services:</strong> White-glove concierge shipping & direct artisan inquiries</div>
+    </div>
+
+    <div style="text-align: center; margin-top: 32px;">
+      <a href="https://ruhstone.com/account" style="background-color: #23201D; color: #FAF7F2; text-decoration: none; padding: 14px 28px; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; display: inline-block;">
+        Enter Your Account Dashboard →
+      </a>
+    </div>
+  `);
+
+  return {
+    to: email,
+    subject: 'Welcome to RUH STONE Atelier | Soul in Stone',
+    html,
+  };
+}
+
+/**
+ * 6. Out For Delivery Email
+ */
+export function getOutForDeliveryEmail(order: Order): EmailPayload {
+  const trackingLink =
+    order.shiprocketTrackingUrl || `https://ruhstone.com/orders/${order.id}`;
+
+  const html = wrapEmailTemplate(`
+    <h1 style="font-family: Georgia, serif; font-size: 22px; font-weight: 300; letter-spacing: 0.08em; text-align: center; margin: 0 0 12px 0;">
+      Arriving Today: Order ${order.id}
+    </h1>
+    <p style="font-size: 13px; line-height: 1.6; color: #57524A; text-align: center; margin: 0 0 24px 0;">
+      Your handcrafted pieces for order <strong>${order.id}</strong> are currently out for delivery with our white-glove courier partner.
+    </p>
+
+    <div style="background-color: #FAF7F2; border: 1px solid #E8E0D2; padding: 20px; margin-bottom: 24px; font-size: 12px; line-height: 1.8;">
+      <div><strong>Recipient:</strong> ${order.customer.name}</div>
+      <div><strong>Delivery Address:</strong> ${order.customer.address}, ${order.customer.city} (${order.customer.pincode})</div>
+      <div><strong>Courier:</strong> ${order.shiprocketCourier || 'White-Glove Surface'}</div>
+    </div>
+
+    <div style="text-align: center; margin-top: 32px;">
+      <a href="${trackingLink}" style="background-color: #23201D; color: #FAF7F2; text-decoration: none; padding: 14px 28px; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; display: inline-block;">
+        Track Live Delivery →
+      </a>
+    </div>
+  `);
+
+  return {
+    to: order.customer.email,
+    subject: `Out for Delivery Today: Your RUH STONE order ${order.id}`,
+    html,
+  };
+}
+
+/**
+ * 7. Order Delivered Email
+ */
+export function getOrderDeliveredEmail(order: Order): EmailPayload {
+  const html = wrapEmailTemplate(`
+    <h1 style="font-family: Georgia, serif; font-size: 22px; font-weight: 300; letter-spacing: 0.08em; text-align: center; margin: 0 0 12px 0;">
+      Delivered: Provenance in Your Home
+    </h1>
+    <p style="font-size: 13px; line-height: 1.6; color: #57524A; text-align: center; margin: 0 0 24px 0;">
+      Your acquisition for order <strong>${order.id}</strong> has been successfully delivered. We hope these pieces bring timeless serenity and the presence of human craft to your sanctuary.
+    </p>
+
+    <div style="background-color: #FAF7F2; border: 1px solid #E8E0D2; padding: 20px; margin-bottom: 24px; font-size: 12px; line-height: 1.8;">
+      <div><strong>Order Reference:</strong> ${order.id}</div>
+      <div><strong>Total Amount:</strong> ₹${order.total.toLocaleString('en-IN')}</div>
+      <div><strong>Care Instructions:</strong> Clean gently with a soft dry lint-free cloth. Natural stone breathes and deepens in character over time.</div>
+    </div>
+
+    <div style="text-align: center; margin-top: 32px;">
+      <a href="https://ruhstone.com/orders/${order.id}" style="background-color: #23201D; color: #FAF7F2; text-decoration: none; padding: 14px 28px; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; display: inline-block;">
+        View Acquisition Details →
+      </a>
+    </div>
+  `);
+
+  return {
+    to: order.customer.email,
+    subject: `Delivered: Your RUH STONE heirloom has arrived (${order.id})`,
+    html,
+  };
+}
+
+/**
+ * 8. Password Reset Request Email
+ */
+export function getPasswordResetEmail(params: { email: string; resetUrl: string }): EmailPayload {
+  const { email, resetUrl } = params;
+  const html = wrapEmailTemplate(`
+    <h1 style="font-family: Georgia, serif; font-size: 22px; font-weight: 300; letter-spacing: 0.08em; text-align: center; margin: 0 0 12px 0;">
+      Reset Your Patron Password
+    </h1>
+    <p style="font-size: 13px; line-height: 1.6; color: #57524A; text-align: center; margin: 0 0 24px 0;">
+      We received a request to reset the password for your RUH STONE patron account. Select the button below to establish a new password.
+    </p>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${resetUrl}" style="background-color: #23201D; color: #FAF7F2; text-decoration: none; padding: 14px 32px; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; display: inline-block;">
+        Reset Password →
+      </a>
+    </div>
+
+    <p style="font-size: 11px; color: #7A746C; text-align: center; margin: 0;">
+      If you did not request this change, you can safely disregard this message. Your credentials remain protected.
+    </p>
+  `);
+
+  return {
+    to: email,
+    subject: 'Reset your password | RUH STONE Patron Security',
+    html,
+  };
+}
+

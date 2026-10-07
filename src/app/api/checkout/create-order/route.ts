@@ -3,10 +3,12 @@ import { getAllProducts } from '@/lib/products';
 import { createOrder } from '@/lib/orders';
 import { createRazorpayOrder, getRazorpayKeys } from '@/lib/razorpay';
 import { captureCartSession } from '@/lib/abandonedCart';
+import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { CustomerInfo, OrderItem, getEffectivePrice } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAuthenticatedUser();
     const body = await req.json();
     const { items, customer } = body as {
       items: Array<{ productId: string; quantity: number }>;
@@ -66,14 +68,18 @@ export async function POST(req: NextRequest) {
 
     // 1. Create Pending Order in Persistent Store
     const newOrder = await createOrder({
+      userId: user?.id,
       customer,
       items: validatedItems,
       subtotal: calculatedSubtotal,
       shipping: shippingCharge,
+      shippingAmount: shippingCharge,
       total: totalAmount,
+      totalAmount,
       currency: 'INR',
       paymentStatus: 'pending',
       orderStatus: 'pending',
+      status: 'pending',
     });
 
     // 2. Create Razorpay Order Server-Side

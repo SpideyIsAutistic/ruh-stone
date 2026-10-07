@@ -140,14 +140,22 @@ export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
 export interface Order {
   id: string;
+  userId?: string;
+  orderNumber?: string;
   customer: CustomerInfo;
   items: OrderItem[];
   subtotal: number;
   shipping: number;
+  shippingAmount?: number;
+  discountAmount?: number;
   total: number;
+  totalAmount?: number;
   currency: 'INR';
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
+  status?: string;
+  shippingAddress?: any;
+  billingAddress?: any;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
@@ -192,6 +200,66 @@ export interface AtelierInquiry {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CustomerProfile {
+  id: string;
+  userId: string;
+  fullName: string;
+  phone?: string;
+  avatarUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Address {
+  id: string;
+  userId: string;
+  fullName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShipmentRecord {
+  id: string;
+  orderId: string;
+  shiprocketOrderId?: string;
+  awb?: string;
+  courierName?: string;
+  status: string;
+  trackingUrl?: string;
+  estimatedDelivery?: string;
+  lastTrackingUpdate?: string;
+  rawTrackingData?: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WishlistItem {
+  id: string;
+  userId: string;
+  productId: string;
+  product?: CraftProduct;
+  createdAt: string;
+}
+
+export interface OrderItemRecord {
+  id: string;
+  orderId: string;
+  productId: string;
+  productName: string;
+  productImage?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
 }
 
 

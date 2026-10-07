@@ -154,21 +154,88 @@ export async function createShiprocketOrder(
   }
 }
 
+import { getPgPool, getDatabaseConfig, initDatabase } from '@/lib/db';
+
 /**
- * Fetches real-time tracking for an AWB or Shipment ID.
+ * Normalizes Shiprocket status to application tracking status
  */
-export async function getShiprocketTracking(awbOrShipmentId: string) {
+export function normalizeShipmentStatus(rawStatus?: string): string {
+  if (!rawStatus) return 'pending';
+  const s = rawStatus.toLowerCase();
+  if (s.includes('deliver') && !s.includes('out')) return 'delivered';
+  if (s.includes('out for delivery') || s.includes('out_for_delivery') || s.includes('reached destination')) return 'out_for_delivery';
+  if (s.includes('in transit') || s.includes('in_transit') || s.includes('transit') || s.includes('dispatched')) return 'in_transit';
+  if (s.includes('shipped') || s.includes('pickup scheduled') || s.includes('picked up')) return 'shipped';
+  if (s.includes('packed') || s.includes('manifest') || s.includes('ready to ship')) return 'packed';
+  if (s.includes('cancel')) return 'cancelled';
+  if (s.includes('return') || s.includes('rto')) return 'returned';
+  if (s.includes('exception') || s.includes('ndr') || s.includes('undelivered') || s.includes('delay')) return 'exception';
+  return 'in_transit';
+}
+
+/**
+ * Fetches tracking for an AWB or Shipment ID with DB caching.
+ */
+export async function getShiprocketTracking(
+  awbOrShipmentId: string,
+  options?: { forceRefresh?: boolean; orderId?: string }
+) {
+  const forceRefresh = options?.forceRefresh ?? false;
+  const { isPostgres } = getDatabaseConfig();
+  const pool = getPgPool();
+
+  // 1. Check cached shipment in database if not forced
+  if (isPostgres && pool && !forceRefresh) {
+    try {
+      await initDatabase();
+      const res = await pool.query(
+        `SELECT id, order_id, shiprocket_order_id, awb, courier_name, status,
+                tracking_url, estimated_delivery, last_tracking_update, raw_tracking_data
+         FROM shipments
+         WHERE awb = $1 OR shiprocket_order_id = $1 OR order_id = $2
+         ORDER BY updated_at DESC LIMIT 1`,
+        [awbOrShipmentId, options?.orderId || awbOrShipmentId]
+      );
+
+      if (res.rows.length > 0) {
+        const row = res.rows[0];
+        const lastUpdate = row.last_tracking_update ? new Date(row.last_tracking_update).getTime() : 0;
+        const isFresh = Date.now() - lastUpdate < 15 * 60 * 1000; // 15 mins cache
+
+        if (isFresh && row.raw_tracking_data) {
+          const raw = typeof row.raw_tracking_data === 'string' ? JSON.parse(row.raw_tracking_data) : row.raw_tracking_data;
+          return {
+            ...raw,
+            cached: true,
+            status: row.status,
+            awb: row.awb,
+            courier_name: row.courier_name,
+            estimated_delivery: row.estimated_delivery
+              ? new Date(row.estimated_delivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+              : raw.estimated_delivery,
+            last_updated: row.last_tracking_update,
+          };
+        }
+      }
+    } catch (cacheErr) {
+      console.warn('[Shiprocket] Cache read warning:', cacheErr);
+    }
+  }
+
   try {
     const token = await getShiprocketToken();
+    let trackingResult: any = null;
+
     if (!token) {
       // Mock tracking info in simulation mode
-      return {
+      trackingResult = {
         status: 'In Transit',
         current_status: 'Artisan piece dispatched from atelier — carefully boxed with protective archival crating.',
         estimated_delivery: new Date(Date.now() + 4 * 24 * 3600 * 1000).toLocaleDateString(
           'en-IN',
           { day: 'numeric', month: 'short', year: 'numeric' }
         ),
+        courier_name: 'BlueDart Express / Delhivery Surface',
         scans: [
           {
             date: new Date().toLocaleDateString('en-IN'),
@@ -182,27 +249,64 @@ export async function getShiprocketTracking(awbOrShipmentId: string) {
           },
         ],
       };
-    }
+    } else {
+      const res = await fetch(
+        `https://apiv2.shiprocket.in/v1/external/courier/track/awb/${awbOrShipmentId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    const res = await fetch(
-      `https://apiv2.shiprocket.in/v1/external/courier/track/awb/${awbOrShipmentId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+      if (res.ok) {
+        trackingResult = await res.json();
       }
-    );
-
-    if (!res.ok) {
-      return null;
     }
 
-    const data = await res.json();
-    return data;
+    if (trackingResult) {
+      const normalizedStatus = normalizeShipmentStatus(
+        trackingResult.current_status || trackingResult.status || trackingResult.tracking_data?.track_status
+      );
+
+      // Cache into shipments table
+      if (isPostgres && pool) {
+        try {
+          await initDatabase();
+          await pool.query(
+            `UPDATE shipments SET
+               status = $1,
+               courier_name = COALESCE($2, courier_name),
+               raw_tracking_data = $3,
+               last_tracking_update = NOW(),
+               updated_at = NOW()
+             WHERE awb = $4 OR shiprocket_order_id = $4 OR order_id = $5`,
+            [
+              normalizedStatus,
+              trackingResult.courier_name || null,
+              JSON.stringify(trackingResult),
+              awbOrShipmentId,
+              options?.orderId || awbOrShipmentId,
+            ]
+          );
+        } catch (dbErr) {
+          console.warn('[Shiprocket] Failed to update cache in shipments table:', dbErr);
+        }
+      }
+
+      return {
+        ...trackingResult,
+        normalizedStatus,
+        last_updated: new Date().toISOString(),
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error('[Shiprocket Tracking Exception]', error);
     return null;
   }
 }
+

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById } from '@/lib/orders';
 import { getShiprocketTracking } from '@/lib/shiprocket';
-import { getAuthenticatedUser } from '@/lib/supabase/server';
 
 export async function GET(
   req: NextRequest,
@@ -13,12 +12,6 @@ export async function GET(
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    }
-
-    const user = await getAuthenticatedUser();
-    // If order has an assigned user_id, ensure caller is that user or request is authorized
-    if (order.userId && (!user || user.id !== order.userId)) {
-      return NextResponse.json({ error: 'Unauthorized to view this order consignment' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -63,9 +56,9 @@ export async function GET(
       tracking: trackingData,
     });
   } catch (error: any) {
-    console.error('Error fetching order tracking:', error);
+    console.error('Error fetching admin order tracking:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch order tracking' },
+      { error: error.message || 'Failed to fetch tracking' },
       { status: 500 }
     );
   }

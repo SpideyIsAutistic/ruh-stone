@@ -17,12 +17,13 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import CartDrawer from '@/components/CartDrawer';
 import ContactModal from '@/components/ContactModal';
 import { CraftProduct, CartItem, CraftCategory, isProductInStock } from '@/types';
+import { CRAFT_PRODUCTS } from '@/data/craftData';
 
 export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<CraftProduct | null>(null);
   const [enquiryProduct, setEnquiryProduct] = useState<CraftProduct | null>(null);
-  const [products, setProducts] = useState<CraftProduct[]>([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [products, setProducts] = useState<CraftProduct[]>(CRAFT_PRODUCTS);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<CraftCategory>('All');
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -30,7 +31,6 @@ export default function Home() {
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoadingProducts(true);
 
     fetch('/api/products')
       .then((res) => {
@@ -39,18 +39,18 @@ export default function Home() {
       })
       .then((data) => {
         if (isMounted) {
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && data.length > 0) {
             setProducts(data);
           } else {
-            setProducts([]);
+            setProducts(CRAFT_PRODUCTS);
           }
           setIsLoadingProducts(false);
         }
       })
       .catch((err) => {
-        console.error('Error fetching storefront products from Supabase:', err);
+        console.error('Error fetching storefront products:', err);
         if (isMounted) {
-          setProducts([]);
+          setProducts(CRAFT_PRODUCTS);
           setIsLoadingProducts(false);
         }
       });

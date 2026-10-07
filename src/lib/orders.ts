@@ -73,6 +73,11 @@ export async function createOrder(
   const newOrder: Order = {
     ...data,
     id,
+    orderNumber: data.orderNumber || id,
+    status: data.status || data.orderStatus || 'pending',
+    shippingAmount: data.shippingAmount ?? data.shipping ?? 0,
+    discountAmount: data.discountAmount ?? 0,
+    totalAmount: data.totalAmount ?? data.total,
     createdAt: now,
     updatedAt: now,
   };
@@ -81,25 +86,34 @@ export async function createOrder(
     await initDatabase();
     await pool.query(
       `INSERT INTO orders (
-        id, customer_name, customer_email, customer_phone, customer_address,
-        items, subtotal, shipping, total, currency, payment_status, order_status,
+        id, user_id, order_number, customer_name, customer_email, customer_phone, customer_address,
+        shipping_address, billing_address, items, subtotal, shipping, shipping_amount,
+        discount_amount, total, total_amount, currency, payment_status, order_status, status,
         razorpay_order_id, razorpay_payment_id, razorpay_signature,
         shiprocket_order_id, shiprocket_shipment_id, shiprocket_awb_code,
         tracking_url, raw_data, created_at, updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,
       [
         newOrder.id,
+        newOrder.userId || null,
+        newOrder.orderNumber,
         newOrder.customer.name,
         newOrder.customer.email,
         newOrder.customer.phone,
         JSON.stringify(newOrder.customer),
+        JSON.stringify(newOrder.shippingAddress || newOrder.customer),
+        JSON.stringify(newOrder.billingAddress || newOrder.customer),
         JSON.stringify(newOrder.items),
         newOrder.subtotal,
         newOrder.shipping || 0,
+        newOrder.shippingAmount || 0,
+        newOrder.discountAmount || 0,
         newOrder.total,
+        newOrder.totalAmount || newOrder.total,
         newOrder.currency || 'INR',
         newOrder.paymentStatus || 'pending',
         newOrder.orderStatus || 'pending',
+        newOrder.status || 'pending',
         newOrder.razorpayOrderId || null,
         newOrder.razorpayPaymentId || null,
         newOrder.razorpaySignature || null,
@@ -112,6 +126,29 @@ export async function createOrder(
         newOrder.updatedAt,
       ]
     );
+
+    // Insert normalized order items
+    if (newOrder.items && Array.isArray(newOrder.items)) {
+      for (const item of newOrder.items) {
+        try {
+          await pool.query(
+            `INSERT INTO order_items (order_id, product_id, product_name, product_image, quantity, unit_price, total_price)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+              newOrder.id,
+              item.productId || 'item',
+              item.name || 'Handcrafted Piece',
+              item.heroImage || null,
+              item.quantity || 1,
+              item.priceNumeric || 0,
+              (item.priceNumeric || 0) * (item.quantity || 1),
+            ]
+          );
+        } catch (itemErr) {
+          console.warn('[DB] Non-fatal order_items insert warning:', itemErr);
+        }
+      }
+    }
 
     // Sync backup to JSON
     const jsonOrders = await getJsonOrders();
@@ -264,6 +301,30 @@ export async function updateOrderShipping(
         orderId,
       ]
     );
+
+    // Also persist into shipments table
+    if (updated.shiprocketOrderId || updated.shiprocketAWB) {
+      try {
+        await pool.query(
+          `INSERT INTO shipments (
+             order_id, shiprocket_order_id, awb, courier_name, status,
+             tracking_url, last_tracking_update, created_at, updated_at
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), NOW())
+           ON CONFLICT DO NOTHING`,
+          [
+            orderId,
+            updated.shiprocketOrderId?.toString() || null,
+            updated.shiprocketAWB || null,
+            updated.shiprocketCourier || 'BlueDart Express / Delhivery',
+            updated.orderStatus === 'shipped' ? 'shipped' : 'manifest_generated',
+            updated.shiprocketTrackingUrl || null,
+          ]
+        );
+      } catch (shipmentErr) {
+        console.warn('[DB] Non-fatal shipments table insert warning:', shipmentErr);
+      }
+    }
   }
 
   const orders = await getJsonOrders();
@@ -275,3 +336,43 @@ export async function updateOrderShipping(
 
   return updated;
 }
+
+export async function associateOrderWithUser(
+  orderId: string,
+  userId: string
+): Promise<Order | null> {
+  const existing = await getOrderById(orderId);
+  if (!existing) return null;
+
+  const now = new Date().toISOString();
+  const updated: Order = {
+    ...existing,
+    userId,
+    updatedAt: now,
+  };
+
+  const { isPostgres } = getDatabaseConfig();
+  const pool = getPgPool();
+
+  if (isPostgres && pool) {
+    await initDatabase();
+    await pool.query(
+      `UPDATE orders SET
+        user_id = $1,
+        raw_data = $2,
+        updated_at = NOW()
+      WHERE id = $3`,
+      [userId, JSON.stringify(updated), orderId]
+    );
+  }
+
+  const orders = await getJsonOrders();
+  const idx = orders.findIndex((o) => o.id === orderId);
+  if (idx > -1) {
+    orders[idx] = updated;
+    await saveJsonOrders(orders);
+  }
+
+  return updated;
+}
+

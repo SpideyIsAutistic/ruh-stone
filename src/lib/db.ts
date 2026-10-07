@@ -36,7 +36,7 @@ export function getPgPool(): Pool | null {
 }
 
 function getInitialSeedProducts(): CraftProduct[] {
-  return [];
+  return CRAFT_PRODUCTS;
 }
 
 /**
@@ -188,27 +188,12 @@ export async function initDatabase(): Promise<void> {
       return;
     } catch (pgError: any) {
       console.warn('[DB] PostgreSQL initialization warning:', pgError?.message || pgError);
-      if (
-        pgError?.code === 'ENOTFOUND' ||
-        pgError?.code === 'ETIMEDOUT' ||
-        pgError?.code === 'ECONNREFUSED' ||
-        process.env.NEXT_PHASE === 'phase-production-build'
-      ) {
-        console.warn('[DB] PostgreSQL unreachable; continuing with local static/cached data.');
-        return;
-      }
-      throw new Error(`PostgreSQL Database Error: ${pgError?.message || pgError}`);
+      console.warn('[DB] PostgreSQL unreachable; falling through to initialize SQLite storage.');
+      // Gracefully continue and initialize SQLite storage
     }
   }
 
-  // If in production without DATABASE_URL, fail explicitly with instructions
-  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-    throw new Error(
-      'Database Error: DATABASE_URL is not set in production. Please configure your PostgreSQL connection string (Supabase or Neon) in your environment variables.'
-    );
-  }
-
-  // SQLite Persistent Storage (Offline local development fallback only)
+  // SQLite Persistent Storage (Offline local development & fallback storage)
   try {
     let sqliteDbPath = path.join(process.cwd(), 'src', 'data', 'ruh_stone.sqlite');
     let dir = path.dirname(sqliteDbPath);
@@ -337,25 +322,38 @@ export async function dbGetProducts(options?: { includeDrafts?: boolean }): Prom
     const pool = getPgPool();
 
     if (isPostgres && pool) {
-      const query = includeDrafts
-        ? 'SELECT data FROM products ORDER BY created_at DESC'
-        : 'SELECT data FROM products WHERE is_published = TRUE ORDER BY created_at DESC';
-      const res = await pool.query(query);
-      return res.rows.map((r) => (typeof r.data === 'string' ? JSON.parse(r.data) : r.data));
+      try {
+        const query = includeDrafts
+          ? 'SELECT data FROM products ORDER BY created_at DESC'
+          : 'SELECT data FROM products WHERE is_published = TRUE ORDER BY created_at DESC';
+        const res = await pool.query(query);
+        if (res.rows && res.rows.length > 0) {
+          return res.rows.map((r) => (typeof r.data === 'string' ? JSON.parse(r.data) : r.data));
+        }
+      } catch (pgQueryErr) {
+        console.warn('[DB] PostgreSQL query failed, attempting SQLite fallback:', pgQueryErr);
+      }
     }
 
     if (sqliteDb) {
-      const query = includeDrafts
-        ? 'SELECT data FROM products ORDER BY created_at DESC'
-        : 'SELECT data FROM products WHERE is_published = 1 ORDER BY created_at DESC';
-      const rows = sqliteDb.prepare(query).all() as Array<{ data: string }>;
-      return rows.map((r) => JSON.parse(r.data));
+      try {
+        const query = includeDrafts
+          ? 'SELECT data FROM products ORDER BY created_at DESC'
+          : 'SELECT data FROM products WHERE is_published = 1 ORDER BY created_at DESC';
+        const rows = sqliteDb.prepare(query).all() as Array<{ data: string }>;
+        if (rows && rows.length > 0) {
+          return rows.map((r) => JSON.parse(r.data));
+        }
+      } catch (sqlErr) {
+        console.warn('[DB] SQLite query failed:', sqlErr);
+      }
     }
   } catch (err: any) {
     console.warn('[DB] dbGetProducts error:', err?.message || err);
   }
 
-  return [];
+  // Bedrock fallback to CRAFT_PRODUCTS
+  return CRAFT_PRODUCTS;
 }
 
 /**
@@ -372,44 +370,57 @@ export async function dbGetProductBySlug(slug: string): Promise<CraftProduct | n
     const withTrailing = `${trimmedSlug}-`;
 
     if (isPostgres && pool) {
-      const res = await pool.query(
-        `SELECT data FROM products 
-         WHERE slug = $1 
-            OR slug = $2 
-            OR slug = $3 
-            OR id = $1 
-            OR id = $2 
-            OR TRIM(BOTH '-' FROM slug) = $2
-         LIMIT 1`,
-        [rawSlug, trimmedSlug, withTrailing]
-      );
-      if (res.rows.length > 0) {
-        const r = res.rows[0];
-        return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+      try {
+        const res = await pool.query(
+          `SELECT data FROM products 
+           WHERE slug = $1 
+              OR slug = $2 
+              OR slug = $3 
+              OR id = $1 
+              OR id = $2 
+              OR TRIM(BOTH '-' FROM slug) = $2
+           LIMIT 1`,
+          [rawSlug, trimmedSlug, withTrailing]
+        );
+        if (res.rows.length > 0) {
+          const r = res.rows[0];
+          return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+        }
+      } catch (pgQueryErr) {
+        console.warn('[DB] PostgreSQL slug query failed, falling back to local data:', pgQueryErr);
       }
-      return null;
     }
 
     if (sqliteDb) {
-      const row = sqliteDb
-        .prepare(`
-          SELECT data FROM products 
-          WHERE slug = ? 
-             OR slug = ? 
-             OR slug = ? 
-             OR id = ? 
-             OR id = ? 
-          LIMIT 1
-        `)
-        .get(rawSlug, trimmedSlug, withTrailing, rawSlug, trimmedSlug) as { data: string } | undefined;
-      if (row) return JSON.parse(row.data);
-      return null;
+      try {
+        const row = sqliteDb
+          .prepare(`
+            SELECT data FROM products 
+            WHERE slug = ? 
+               OR slug = ? 
+               OR slug = ? 
+               OR id = ? 
+               OR id = ? 
+            LIMIT 1
+          `)
+          .get(rawSlug, trimmedSlug, withTrailing, rawSlug, trimmedSlug) as { data: string } | undefined;
+        if (row) return JSON.parse(row.data);
+      } catch (sqlErr) {
+        console.warn('[DB] SQLite slug query failed:', sqlErr);
+      }
     }
   } catch (err: any) {
     console.warn('[DB] dbGetProductBySlug error:', err?.message || err);
   }
 
-  return null;
+  // Fallback to CRAFT_PRODUCTS
+  const staticFound = CRAFT_PRODUCTS.find(
+    (p) =>
+      p.slug === slug ||
+      p.id === slug ||
+      p.slug.replace(/(^-+|-+$)/g, '') === slug.replace(/(^-+|-+$)/g, '')
+  );
+  return staticFound || null;
 }
 
 /**

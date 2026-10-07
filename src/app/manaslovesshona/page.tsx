@@ -47,6 +47,7 @@ import {
   InquiryStatus,
 } from '@/types';
 import ProductCardImage from '@/components/ProductCardImage';
+import OrderTrackingTimeline from '@/components/OrderTrackingTimeline';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -59,6 +60,16 @@ export default function AdminPage() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [orderFilter, setOrderFilter] = useState<string>('all');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  // Order Tracking & Logistics State
+  const [trackingModalOrder, setTrackingModalOrder] = useState<Order | null>(null);
+  const [trackingData, setTrackingData] = useState<any>(null);
+  const [loadingTracking, setLoadingTracking] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [editingAwbOrder, setEditingAwbOrder] = useState<Order | null>(null);
+  const [customAwbInput, setCustomAwbInput] = useState('');
+  const [customCourierInput, setCustomCourierInput] = useState('BlueDart Express');
+  const [savingAwb, setSavingAwb] = useState(false);
 
   // Inquiries State
   const [inquiries, setInquiries] = useState<AtelierInquiry[]>([]);
@@ -229,6 +240,54 @@ export default function AdminPage() {
       console.error('Failed to update order status', err);
     } finally {
       setUpdatingOrderId(null);
+    }
+  };
+
+  const handleOpenTracking = async (order: Order, forceRefresh = false) => {
+    setTrackingModalOrder(order);
+    setLoadingTracking(true);
+    setTrackingError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${order.id}/track${forceRefresh ? '?refresh=true' : ''}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setTrackingData(data.tracking);
+      } else {
+        const err = await res.json();
+        setTrackingError(err.error || 'Failed to retrieve tracking details');
+      }
+    } catch {
+      setTrackingError('Unable to connect to logistics provider');
+    } finally {
+      setLoadingTracking(false);
+    }
+  };
+
+  const handleSaveAwb = async (orderId: string) => {
+    if (!customAwbInput.trim()) return;
+    setSavingAwb(true);
+    try {
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          orderStatus: 'shipped',
+          shiprocketAWB: customAwbInput.trim(),
+          shiprocketCourier: customCourierInput.trim() || 'BlueDart Express',
+        }),
+      });
+      if (res.ok) {
+        await fetchOrders();
+        setEditingAwbOrder(null);
+        setCustomAwbInput('');
+      }
+    } catch (err) {
+      console.error('Failed to assign AWB', err);
+    } finally {
+      setSavingAwb(false);
     }
   };
 
@@ -2077,15 +2136,28 @@ export default function AdminPage() {
                     >
                       {/* Order Header */}
                       <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#F2ECE1] gap-3">
-                        <div className="flex items-center space-x-3">
-                          <Link
-                            href={`/orders/${order.id}`}
-                            target="_blank"
-                            className="font-mono text-sm font-semibold text-[#23201D] hover:underline flex items-center space-x-1"
-                          >
-                            <span>{order.id}</span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </Link>
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <div>
+                            <span className="font-mono text-sm font-semibold text-[#23201D]">
+                              {order.orderNumber || order.id}
+                            </span>
+                            {order.orderNumber && order.orderNumber !== order.id && (
+                              <span className="text-[10px] text-[#7A746C] font-mono block">
+                                ID: {order.id}
+                              </span>
+                            )}
+                          </div>
+
+                          {order.userId ? (
+                            <span className="bg-[#23201D] text-[#FAF7F2] text-[9px] uppercase tracking-wider px-2 py-0.5 font-sans">
+                              Patron Account
+                            </span>
+                          ) : (
+                            <span className="bg-[#FAF7F2] border border-[#D1C2AC] text-[#7A746C] text-[9px] uppercase tracking-wider px-2 py-0.5 font-sans">
+                              Guest Checkout
+                            </span>
+                          )}
+
                           <span className="text-xs text-[#7A746C]">
                             {new Date(order.createdAt).toLocaleString('en-IN', {
                               dateStyle: 'medium',
@@ -2094,7 +2166,7 @@ export default function AdminPage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center space-x-3">
+                        <div className="flex flex-wrap items-center gap-2.5">
                           <span
                             className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 border ${
                               order.paymentStatus === 'paid'
@@ -2133,39 +2205,102 @@ export default function AdminPage() {
 
                       {/* Order Details Body */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4">
-                        {/* Patron & Shipping (4 cols) */}
-                        <div className="md:col-span-4 text-xs space-y-2 border-r border-[#F2ECE1] pr-4">
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block font-medium">
-                            Patron Delivery Details
-                          </span>
-                          <div className="font-medium text-[#23201D]">{order.customer.name}</div>
-                          <div className="text-[#57524A]">{order.customer.email}</div>
-                          <div className="text-[#57524A]">{order.customer.phone}</div>
-                          <div className="text-[#57524A] pt-1">
-                            {order.customer.address}, {order.customer.city} - {order.customer.pincode}
+                        {/* Patron & Shipping (5 cols) */}
+                        <div className="md:col-span-5 text-xs space-y-3 border-r border-[#F2ECE1] pr-4">
+                          <div>
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block font-medium mb-1">
+                              Patron Details
+                            </span>
+                            <div className="font-medium text-[#23201D] text-sm">{order.customer.name}</div>
+                            <div className="text-[#57524A]">{order.customer.email}</div>
+                            <div className="text-[#57524A]">{order.customer.phone}</div>
                           </div>
-                          {order.customer.giftNote && (
-                            <div className="mt-2 p-2 bg-[#FAF7F2] border border-[#E8E0D2] italic text-[11px] text-[#57524A]">
-                              Note: {order.customer.giftNote}
-                            </div>
-                          )}
 
-                          <div className="pt-3 border-t border-[#F2ECE1] space-y-1 text-[11px]">
-                            {order.razorpayPaymentId && (
-                              <div className="text-[#7A746C]">
-                                Razorpay Ref: <span className="font-mono text-[#23201D]">{order.razorpayPaymentId}</span>
+                          <div className="pt-2 border-t border-[#F2ECE1]">
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block font-medium mb-0.5">
+                              Consignment Destination
+                            </span>
+                            <div className="text-[#57524A] leading-relaxed">
+                              {order.customer.address}, {order.customer.city}
+                              {order.customer.state ? `, ${order.customer.state}` : ''} - {order.customer.pincode}
+                            </div>
+                            {order.customer.giftNote && (
+                              <div className="mt-2 p-2 bg-[#FAF7F2] border border-[#E8E0D2] italic text-[11px] text-[#57524A]">
+                                Gift Note: “{order.customer.giftNote}”
                               </div>
                             )}
-                            {order.shiprocketAWB && (
-                              <div className="text-[#7A746C]">
-                                Shiprocket AWB: <span className="font-mono text-[#23201D]">{order.shiprocketAWB}</span>
-                              </div>
-                            )}
+                          </div>
+
+                          {/* Shiprocket & Payment Metadata */}
+                          <div className="pt-2 border-t border-[#F2ECE1] space-y-1.5 text-[11px]">
+                            <div className="text-[#7A746C] flex justify-between">
+                              <span>Razorpay Ref:</span>
+                              <span className="font-mono text-[#23201D]">
+                                {order.razorpayPaymentId || 'N/A'}
+                              </span>
+                            </div>
+                            <div className="text-[#7A746C] flex justify-between">
+                              <span>Courier:</span>
+                              <span className="font-medium text-[#23201D]">
+                                {order.shiprocketCourier || (order.shiprocketAWB ? 'BlueDart Express' : 'Unassigned')}
+                              </span>
+                            </div>
+                            <div className="text-[#7A746C] flex justify-between">
+                              <span>Shiprocket AWB:</span>
+                              <span className="font-mono text-[#23201D]">
+                                {order.shiprocketAWB || 'Pending'}
+                              </span>
+                            </div>
+                            <div className="text-[#7A746C] flex justify-between">
+                              <span>Shipment Status:</span>
+                              <span className="font-medium text-[#AA9B87] uppercase text-[10px]">
+                                {order.orderStatus === 'delivered'
+                                  ? 'Delivered'
+                                  : order.orderStatus === 'shipped'
+                                  ? 'Dispatched / In Transit'
+                                  : order.shiprocketAWB
+                                  ? 'AWB Allocated'
+                                  : 'Pending Fulfillment'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="pt-3 border-t border-[#F2ECE1] flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenTracking(order)}
+                              className="px-3 py-1.5 bg-[#23201D] text-[#FAF7F2] text-[10px] uppercase tracking-widest flex items-center space-x-1.5 hover:bg-[#3D3731] transition-colors shadow-xs"
+                            >
+                              <Truck className="w-3.5 h-3.5" />
+                              <span>TRACK SHIPMENT</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingAwbOrder(order);
+                                setCustomAwbInput(order.shiprocketAWB || '');
+                                setCustomCourierInput(order.shiprocketCourier || 'BlueDart Express');
+                              }}
+                              className="px-2.5 py-1.5 border border-[#D1C2AC] text-[#23201D] text-[10px] uppercase tracking-widest hover:bg-[#FAF7F2] transition-colors"
+                            >
+                              <span>{order.shiprocketAWB ? 'UPDATE AWB' : 'ASSIGN AWB'}</span>
+                            </button>
+
+                            <Link
+                              href={`/orders/${order.id}`}
+                              target="_blank"
+                              className="px-2.5 py-1.5 border border-[#E8E0D2] text-[#7A746C] text-[10px] uppercase tracking-widest hover:text-[#23201D] transition-colors flex items-center space-x-1"
+                            >
+                              <span>INVOICE</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
                           </div>
                         </div>
 
-                        {/* Items Ordered (8 cols) */}
-                        <div className="md:col-span-8 space-y-3">
+                        {/* Items Ordered (7 cols) */}
+                        <div className="md:col-span-7 space-y-3">
                           <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block font-medium">
                             Consignment Items ({order.items.length})
                           </span>
@@ -2191,7 +2326,26 @@ export default function AdminPage() {
                             ))}
                           </div>
 
-                          <div className="flex justify-between items-baseline pt-3 border-t border-[#23201D] text-xs">
+                          <div className="pt-3 border-t border-[#E8E0D2] space-y-1 text-xs text-[#7A746C]">
+                            <div className="flex justify-between">
+                              <span>Subtotal</span>
+                              <span>₹{(order.subtotal || order.total).toLocaleString('en-IN')}</span>
+                            </div>
+                            {Boolean(order.shipping || order.shippingAmount) && (
+                              <div className="flex justify-between">
+                                <span>Shipping Remittance</span>
+                                <span>₹{Number(order.shippingAmount || order.shipping || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+                            {Boolean(order.discountAmount && order.discountAmount > 0) && (
+                              <div className="flex justify-between text-[#8B3A2B]">
+                                <span>Patron Privilege Discount</span>
+                                <span>-₹{Number(order.discountAmount).toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex justify-between items-baseline pt-2.5 border-t border-[#23201D] text-xs">
                             <span className="font-medium text-[#23201D] uppercase tracking-wider">
                               Total Remittance
                             </span>
@@ -2203,6 +2357,166 @@ export default function AdminPage() {
                       </div>
                     </div>
                   ))}
+              </div>
+            )}
+
+            {/* TRACKING MODAL */}
+            {trackingModalOrder && (
+              <div className="fixed inset-0 z-50 bg-[#23201D]/70 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-[#FAF7F2] border border-[#E8E0D2] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-start justify-between border-b border-[#E8E0D2] pb-4 mb-6">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-[0.25em] text-[#AA9B87] block font-medium">
+                        ATELIER LOGISTICS TELEMETRY
+                      </span>
+                      <h3 className="font-serif text-2xl text-[#23201D] font-light mt-0.5">
+                        Order #{trackingModalOrder.orderNumber || trackingModalOrder.id}
+                      </h3>
+                      <p className="text-xs text-[#7A746C] mt-1">
+                        Consignment for {trackingModalOrder.customer.name} · {trackingModalOrder.customer.city}, {trackingModalOrder.customer.state || 'India'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setTrackingModalOrder(null);
+                        setTrackingData(null);
+                        setTrackingError(null);
+                      }}
+                      className="p-1.5 text-[#7A746C] hover:text-[#23201D] transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {loadingTracking ? (
+                    <div className="py-16 text-center">
+                      <RefreshCw className="w-6 h-6 animate-spin text-[#AA9B87] mx-auto mb-3" />
+                      <p className="text-xs text-[#7A746C] uppercase tracking-wider font-medium">
+                        Contacting Shiprocket Logistics Gateway...
+                      </p>
+                    </div>
+                  ) : trackingError ? (
+                    <div className="py-8 text-center bg-[#F4EFE6] border border-[#E8E0D2] p-6">
+                      <p className="text-sm text-[#8B3A2B] font-medium">{trackingError}</p>
+                      <p className="text-xs text-[#7A746C] mt-2">
+                        No live scan response received. The shipment might still be pending pickup or AWB manifest generation.
+                      </p>
+                      <div className="mt-4">
+                        <button
+                          onClick={() => handleOpenTracking(trackingModalOrder, true)}
+                          className="px-4 py-2 border border-[#23201D] text-xs uppercase tracking-widest text-[#23201D] hover:bg-[#23201D] hover:text-[#FAF7F2] transition-colors"
+                        >
+                          Retry Live Tracking
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <OrderTrackingTimeline
+                        orderStatus={trackingData?.currentStatus || trackingModalOrder.orderStatus}
+                        paymentStatus={trackingModalOrder.paymentStatus}
+                        courierName={trackingData?.courierName || trackingModalOrder.shiprocketCourier || 'BlueDart Express'}
+                        awb={trackingData?.awb || trackingModalOrder.shiprocketAWB}
+                        trackingUrl={trackingData?.trackingUrl || trackingModalOrder.shiprocketTrackingUrl}
+                        estimatedDelivery={trackingData?.estimatedDelivery}
+                        latestUpdate={trackingData?.latestEvent}
+                        scans={trackingData?.scans}
+                        onRefresh={() => handleOpenTracking(trackingModalOrder, true)}
+                        isRefreshing={loadingTracking}
+                      />
+
+                      <div className="pt-4 border-t border-[#E8E0D2] flex justify-end">
+                        <button
+                          onClick={() => {
+                            setTrackingModalOrder(null);
+                            setTrackingData(null);
+                          }}
+                          className="px-4 py-2 bg-[#23201D] text-[#FAF7F2] text-xs uppercase tracking-widest hover:bg-[#3D3731] transition-colors"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ASSIGN AWB MODAL */}
+            {editingAwbOrder && (
+              <div className="fixed inset-0 z-50 bg-[#23201D]/70 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-[#FAF7F2] border border-[#E8E0D2] shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between border-b border-[#E8E0D2] pb-3 mb-4">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-[#AA9B87] font-semibold">
+                        DISPATCH FULFILLMENT
+                      </span>
+                      <h4 className="font-serif text-lg text-[#23201D]">
+                        Order #{editingAwbOrder.orderNumber || editingAwbOrder.id}
+                      </h4>
+                    </div>
+                    <button
+                      onClick={() => setEditingAwbOrder(null)}
+                      className="text-[#7A746C] hover:text-[#23201D]"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-widest text-[#7A746C] block mb-1 font-medium">
+                        Courier Partner
+                      </label>
+                      <select
+                        value={customCourierInput}
+                        onChange={(e) => setCustomCourierInput(e.target.value)}
+                        className="w-full bg-[#FFFFFF] border border-[#D1C2AC] px-3 py-2 text-xs text-[#23201D] focus:outline-none"
+                      >
+                        <option value="BlueDart Express">BlueDart Express</option>
+                        <option value="Delhivery">Delhivery</option>
+                        <option value="DTDC Air">DTDC Air</option>
+                        <option value="Shadowfax">Shadowfax</option>
+                        <option value="Ecom Express">Ecom Express</option>
+                        <option value="FedEx India">FedEx India</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase tracking-widest text-[#7A746C] block mb-1 font-medium">
+                        Shiprocket AWB Code *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 143245678901"
+                        value={customAwbInput}
+                        onChange={(e) => setCustomAwbInput(e.target.value)}
+                        className="w-full bg-[#FFFFFF] border border-[#D1C2AC] px-3 py-2 text-xs font-mono text-[#23201D] focus:outline-none"
+                      />
+                      <p className="text-[10px] text-[#7A746C] mt-1">
+                        Attaching an AWB marks this consignment as SHIPPED and creates live patron tracking telemetry.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-2 pt-2 border-t border-[#E8E0D2]">
+                      <button
+                        type="button"
+                        onClick={() => setEditingAwbOrder(null)}
+                        className="px-3 py-1.5 border border-[#D1C2AC] text-xs text-[#7A746C] uppercase tracking-wider"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={savingAwb || !customAwbInput.trim()}
+                        onClick={() => handleSaveAwb(editingAwbOrder.id)}
+                        className="px-4 py-1.5 bg-[#23201D] text-[#FAF7F2] text-xs uppercase tracking-widest disabled:opacity-50"
+                      >
+                        {savingAwb ? 'Saving...' : 'Save & Mark Shipped'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

@@ -5,6 +5,7 @@ import SafeImage from './SafeImage';
 import Link from 'next/link';
 import { X, Trash2, Check, ArrowRight, ShoppingBag, ShieldCheck, Loader2 } from 'lucide-react';
 import { CartItem, getEffectivePrice } from '@/types';
+import AuthModal from './AuthModal';
 
 declare global {
   interface Window {
@@ -47,6 +48,12 @@ export default function CartDrawer({
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Patron Auth & Saved Addresses State
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+
   // Load Razorpay Checkout Script
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.Razorpay) {
@@ -56,6 +63,55 @@ export default function CartDrawer({
       document.body.appendChild(script);
     }
   }, []);
+
+  const loadPatronData = () => {
+    fetch('/api/account/profile')
+      .then((res) => {
+        if (res.ok) {
+          setIsLoggedIn(true);
+          return res.json();
+        }
+        return null;
+      })
+      .then((data) => {
+        if (data && data.profile) {
+          setFormData((prev) => ({
+            ...prev,
+            name: prev.name || data.profile.full_name || '',
+            email: prev.email || data.email || '',
+            phone: prev.phone || data.profile.phone || '',
+          }));
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/account/addresses')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.addresses && data.addresses.length > 0) {
+          setSavedAddresses(data.addresses);
+          const def = data.addresses.find((a: any) => a.is_default) || data.addresses[0];
+          if (def) {
+            setSelectedAddressId(def.id);
+            setFormData((prev) => ({
+              ...prev,
+              name: prev.name || def.full_name || '',
+              phone: prev.phone || def.phone || '',
+              address: prev.address || `${def.address_line_1}${def.address_line_2 ? ', ' + def.address_line_2 : ''}`,
+              city: prev.city || def.city || '',
+              pincode: prev.pincode || def.postal_code || '',
+            }));
+          }
+        }
+      })
+      .catch(() => {});
+  };
+
+  // Fetch Patron Profile & Saved Addresses for 1-click checkout
+  useEffect(() => {
+    if (!isOpen) return;
+    loadPatronData();
+  }, [isOpen]);
 
   // Restore Cart from URL token (?restore=token)
   useEffect(() => {
@@ -302,15 +358,31 @@ export default function CartDrawer({
 
                 <div className="w-full space-y-3">
                   <Link
-                    href={`/orders/${confirmedOrderId}`}
+                    href={isLoggedIn ? `/account/orders/${confirmedOrderId}` : `/track-order?orderNumber=${confirmedOrderId}`}
                     className="block w-full bg-[#23201D] text-[#FAF7F2] text-[11px] font-sans tracking-[0.2em] uppercase py-3.5 hover:bg-[#3A3027] transition-colors text-center"
                   >
                     TRACK CONSIGNMENT & PROVENANCE →
                   </Link>
 
+                  {isLoggedIn ? (
+                    <Link
+                      href="/account?tab=orders"
+                      className="block w-full border border-[#D1C2AC] text-[#23201D] text-[10px] font-sans tracking-[0.2em] uppercase py-3 hover:bg-[#ECE4D6] transition-colors text-center"
+                    >
+                      VIEW MY PATRON ACCOUNT & ORDERS
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/signup?redirect=${encodeURIComponent(`/account/orders/${confirmedOrderId}`)}`}
+                      className="block w-full border border-[#D1C2AC] text-[#23201D] text-[10px] font-sans tracking-[0.2em] uppercase py-3 hover:bg-[#ECE4D6] transition-colors text-center"
+                    >
+                      CREATE PATRON ACCOUNT
+                    </Link>
+                  )}
+
                   <button
                     onClick={handleReset}
-                    className="block w-full border border-[#D1C2AC] text-[#23201D] text-[10px] font-sans tracking-[0.2em] uppercase py-3 hover:bg-[#ECE4D6] transition-colors text-center"
+                    className="block w-full text-[#7A746C] text-[10px] font-sans tracking-[0.2em] uppercase py-2 hover:text-[#23201D] transition-colors text-center"
                   >
                     RETURN TO ATELIER
                   </button>
@@ -439,6 +511,27 @@ export default function CartDrawer({
                   </div>
                 )}
 
+                {/* Patron Sign In Option */}
+                {!isLoggedIn && (
+                  <div className="bg-[#F4EFE6] border border-[#E8E0D2] p-3.5 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-serif text-xs text-[#23201D] font-medium block">
+                        Already have an account?
+                      </span>
+                      <span className="text-[10px] text-[#7A746C] block mt-0.5">
+                        Sign in for 1-click address autofill & orders tracking.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="px-3.5 py-1.5 bg-[#23201D] text-[#FAF7F2] text-[10px] uppercase tracking-wider font-sans hover:bg-[#3D3731] transition-colors shrink-0 ml-3"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block mb-1">
                     FULL NAME *
@@ -480,6 +573,45 @@ export default function CartDrawer({
                     />
                   </div>
                 </div>
+
+                {/* Saved Patron Addresses Selector */}
+                {savedAddresses.length > 0 && (
+                  <div className="bg-[#F4EFE6] border border-[#E8E0D2] p-3 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-[#23201D] font-medium">
+                        USE SAVED ATELIER ADDRESS
+                      </span>
+                      <span className="text-[10px] text-[#AA9B87]">
+                        {savedAddresses.length} saved
+                      </span>
+                    </div>
+                    <select
+                      value={selectedAddressId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setSelectedAddressId(id);
+                        const chosen = savedAddresses.find((a) => a.id === id);
+                        if (chosen) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            name: chosen.full_name || prev.name,
+                            phone: chosen.phone || prev.phone,
+                            address: `${chosen.address_line_1}${chosen.address_line_2 ? ', ' + chosen.address_line_2 : ''}`,
+                            city: chosen.city || prev.city,
+                            pincode: chosen.postal_code || prev.pincode,
+                          }));
+                        }
+                      }}
+                      className="w-full bg-[#FAF7F2] border border-[#D1C2AC] px-3 py-2 text-xs text-[#23201D] focus:outline-none"
+                    >
+                      {savedAddresses.map((addr) => (
+                        <option key={addr.id} value={addr.id}>
+                          {addr.full_name} — {addr.address_line_1}, {addr.city} ({addr.postal_code}) {addr.is_default ? '★ Default' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.2em] text-[#7A746C] block mb-1">
@@ -600,6 +732,15 @@ export default function CartDrawer({
           )}
         </div>
       </div>
+
+      {/* Auth Modal Popup for 1-Click Checkout */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => {
+          loadPatronData();
+        }}
+      />
     </div>
   );
 }

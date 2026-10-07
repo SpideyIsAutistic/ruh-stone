@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrderById, updateOrderPayment, updateOrderShipping } from '@/lib/orders';
+import { getOrderById, updateOrderPayment, updateOrderShipping, associateOrderWithUser } from '@/lib/orders';
 import { verifyRazorpayPayment } from '@/lib/razorpay';
 import { createShiprocketOrder } from '@/lib/shiprocket';
 import {
@@ -8,6 +8,7 @@ import {
   getPaymentReceiptEmail,
 } from '@/lib/email';
 import { markCartRecovered } from '@/lib/abandonedCart';
+import { getAuthenticatedUser } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Mark Order as Paid
-    const updatedOrder = await updateOrderPayment(orderId, {
+    let updatedOrder = await updateOrderPayment(orderId, {
       paymentId: razorpay_payment_id,
       signature: razorpay_signature,
       status: 'paid',
@@ -75,6 +76,17 @@ export async function POST(req: NextRequest) {
         { error: 'Failed to update order status' },
         { status: 500 }
       );
+    }
+
+    // Associate with authenticated patron if signed in
+    try {
+      const user = await getAuthenticatedUser();
+      if (user && !updatedOrder.userId) {
+        const associated = await associateOrderWithUser(orderId, user.id);
+        if (associated) updatedOrder = associated;
+      }
+    } catch (assocErr) {
+      console.warn('Non-fatal patron order association warning:', assocErr);
     }
 
     // 3. Mark Abandoned Cart as Recovered (Cancel future reminder emails)

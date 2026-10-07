@@ -91,6 +91,18 @@ export default function Footer({ onOpenContact }: FooterProps) {
               >
                 Contact
               </button>
+              <Link
+                href="/track-order"
+                className="text-[#23201D] hover:text-[#AA9B87] transition-colors"
+              >
+                Track Order
+              </Link>
+              <Link
+                href="/account"
+                className="text-[#23201D] hover:text-[#AA9B87] transition-colors"
+              >
+                Patron Account
+              </Link>
               <a
                 href="mailto:support@ruhstone.com"
                 className="text-[#23201D] hover:text-[#AA9B87] transition-colors"
